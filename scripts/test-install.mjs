@@ -12,7 +12,12 @@ const stage = await mkdtemp(resolve(root, ".runtime/install-check-"));
 const spec =
   process.argv[2] || resolve(root, `dist/dsh-atelier-0.3.0-universal.tgz`);
 // 在线 tarball 保留协议和地址，不能作为本机路径 resolve。
-const archive = /^https?:\/\//.test(spec) ? new URL(spec).href : resolve(spec);
+const archive =
+  /^(https?:|github:)/.test(spec) ||
+  spec === "dsh-atelier" ||
+  spec.startsWith("dsh-atelier@")
+    ? spec
+    : resolve(spec);
 const child = spawn(
   process.execPath,
   [

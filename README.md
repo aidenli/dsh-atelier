@@ -1,5 +1,16 @@
 # DSH Atelier
 
+## 快速安装
+
+GitHub 预构建版本已可安装，在 DSH 源码目录执行：
+
+```powershell
+pnpm dsh plugin --profile web add github:aidenli/dsh-atelier#dist
+pnpm dsh web
+```
+
+全局安装 DSH 时使用 `dsh` 替代 `pnpm dsh`。已有实例需正常重启；首次从 Go 迁移先停止旧后端并备份数据。npm 包尚待发布，完整说明见 [安装与发布](docs/安装与发布.md)。
+
 通过 DSH 对话创建 Wan Animate2 动作迁移任务，独立 Node 服务负责持久化排队、平台调用、恢复和结果归档，React 工作台位于原生右侧详情列。素材齐全后直接入队，没有计划确认步骤。
 
 当前兼容本机 DeepSeek Harness `0.1.3-alpha.1`、Cordis `4.0.2`，源码目录为 `E:\project\deepseek-harness`。DSH 接口尚未稳定，升级后应重新构建并执行集成测试。

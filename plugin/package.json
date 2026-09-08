@@ -1,6 +1,9 @@
 {
   "name": "dsh-atelier",
-  "version": "0.3.0",
+  "version": "0.3.1",
+  "description": "DSH 对话式动作迁移工作台，包含持久化 Node 后端",
+  "repository": "github:aidenli/dsh-atelier",
+  "license": "SEE LICENSE IN LICENSE",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -21,6 +24,7 @@
     "./package.json": "./package.json"
   },
   "files": [
+    "LICENSE",
     "lib/THIRD_PARTY_NOTICES.txt",
     "lib/index.js",
     "lib/client.js",
