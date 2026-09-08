@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "target": "ES2022", "module": "ESNext", "moduleResolution": "Bundler",
+    "strict": true, "skipLibCheck": true, "noEmit": true, "jsx": "react-jsx",
+    "allowImportingTsExtensions": true, "lib": ["ES2022", "DOM", "ESNext.Decorators"],
+    "types": ["node", "react"]
+  },
+  "files": ["src/index.ts"]
+}

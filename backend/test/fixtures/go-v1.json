@@ -1,0 +1,241 @@
+{
+  "events": [
+    {
+      "seq": 1,
+      "sessionId": "source",
+      "entityId": "asset-e6084fd0cfe082ab075cffc0bcdc5551",
+      "kind": "asset",
+      "message": "素材已保存",
+      "notify": false,
+      "delivered": false,
+      "createdAt": "2026-09-08T09:23:18.6739452Z"
+    },
+    {
+      "seq": 2,
+      "sessionId": "source",
+      "entityId": "asset-b77c1cc3f070e0c1b582436a2450aee0",
+      "kind": "asset",
+      "message": "素材已保存",
+      "notify": false,
+      "delivered": false,
+      "createdAt": "2026-09-08T09:23:18.6788226Z"
+    },
+    {
+      "seq": 3,
+      "sessionId": "chat",
+      "entityId": "task-fa286c31aaeeb47a443674f84f0e66d6",
+      "kind": "task",
+      "message": "已加入本地队列",
+      "notify": false,
+      "delivered": false,
+      "createdAt": "2026-09-08T09:23:18.6820096Z"
+    },
+    {
+      "seq": 4,
+      "sessionId": "chat",
+      "entityId": "task-fa286c31aaeeb47a443674f84f0e66d6",
+      "kind": "task",
+      "message": "动作 \u003c\u0026\u003e 迁移: remote_pending",
+      "notify": false,
+      "delivered": false,
+      "createdAt": "2026-09-08T09:23:18.6851523Z"
+    },
+    {
+      "seq": 5,
+      "sessionId": "source",
+      "entityId": "asset-e6084fd0cfe082ab075cffc0bcdc5551",
+      "kind": "asset",
+      "message": "素材已从素材库移除",
+      "notify": false,
+      "delivered": false,
+      "createdAt": "2026-09-08T09:23:18.6913264Z"
+    }
+  ],
+  "files": {
+    "files\\asset-b77c1cc3f070e0c1b582436a2450aee0.mp4": "AAAAGGZ0eXBtcDQyAAAAAG1wNDJpc29tAAAACG1kYXQ=",
+    "files\\asset-e6084fd0cfe082ab075cffc0bcdc5551.png": "iVBORw0KGgoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+  },
+  "planId": "plan-922dcac51956e7eb56e6bc340fb3ff98",
+  "request": {
+    "requestId": "go-upgrade",
+    "sessionId": "chat",
+    "tasks": [
+      {
+        "title": "动作 \u003c\u0026\u003e 迁移",
+        "workflowId": "wan-animate2",
+        "imageId": "asset-e6084fd0cfe082ab075cffc0bcdc5551",
+        "videoId": "asset-b77c1cc3f070e0c1b582436a2450aee0",
+        "parameters": {
+          "width": 480,
+          "height": 848,
+          "frames": 81,
+          "skip": 0
+        }
+      }
+    ]
+  },
+  "rows": {
+    "assets": [
+      {
+        "id": "asset-e6084fd0cfe082ab075cffc0bcdc5551",
+        "sessionId": "source",
+        "name": "image.png",
+        "kind": "image",
+        "mime": "image/png",
+        "size": 32,
+        "sha256": "9656be35bd353ebedd79d7d24a14df408ef96b99fb4e4b4542e3bdd56de73134",
+        "path": "files\\asset-e6084fd0cfe082ab075cffc0bcdc5551.png",
+        "createdAt": "2026-09-08T09:23:18.6734334Z",
+        "deletedAt": "2026-09-08T09:23:18.6913264Z"
+      },
+      {
+        "id": "asset-b77c1cc3f070e0c1b582436a2450aee0",
+        "sessionId": "source",
+        "name": "video.mp4",
+        "kind": "video",
+        "mime": "video/mp4",
+        "size": 32,
+        "sha256": "3fb81b3788cda6fddb1a09f35bbdb090ab4d71601f538a4ba9366f19a21b65af",
+        "path": "files\\asset-b77c1cc3f070e0c1b582436a2450aee0.mp4",
+        "createdAt": "2026-09-08T09:23:18.6788226Z"
+      }
+    ],
+    "attempts": [
+      {
+        "id": "task-fa286c31aaeeb47a443674f84f0e66d6-1",
+        "taskId": "task-fa286c31aaeeb47a443674f84f0e66d6",
+        "number": 1,
+        "remoteId": "existing-remote",
+        "state": "remote_pending",
+        "error": "",
+        "createdAt": "2026-09-08T09:23:18.6814898Z",
+        "updatedAt": "2026-09-08T09:23:18.6846318Z"
+      }
+    ],
+    "plans": [
+      {
+        "id": "plan-922dcac51956e7eb56e6bc340fb3ff98",
+        "sessionId": "chat",
+        "requestId": "go-upgrade",
+        "fingerprint": "904602431c7a005e7d8e5f148f58d0aedb63a1d4eedfed9b33ec9621410250ce",
+        "taskIds": ["task-fa286c31aaeeb47a443674f84f0e66d6"],
+        "createdAt": "2026-09-08T09:23:18.6814898Z"
+      }
+    ],
+    "tasks": [
+      {
+        "id": "task-fa286c31aaeeb47a443674f84f0e66d6",
+        "planId": "plan-922dcac51956e7eb56e6bc340fb3ff98",
+        "sessionId": "chat",
+        "title": "动作 \u003c\u0026\u003e 迁移",
+        "imageId": "asset-e6084fd0cfe082ab075cffc0bcdc5551",
+        "videoId": "asset-b77c1cc3f070e0c1b582436a2450aee0",
+        "workflow": {
+          "id": "wan-animate2",
+          "name": "Wan Animate2",
+          "remoteId": "2096817694862565378",
+          "revision": 1,
+          "enabled": true,
+          "defaults": {
+            "width": 480,
+            "height": 848,
+            "frames": 0,
+            "skip": 0
+          },
+          "mapping": {
+            "frames": {
+              "nodeId": "746",
+              "fieldName": "value"
+            },
+            "height": {
+              "nodeId": "712",
+              "fieldName": "value"
+            },
+            "image": {
+              "nodeId": "189",
+              "fieldName": "image"
+            },
+            "skip": {
+              "nodeId": "747",
+              "fieldName": "value"
+            },
+            "video": {
+              "nodeId": "604",
+              "fieldName": "video"
+            },
+            "width": {
+              "nodeId": "709",
+              "fieldName": "value"
+            }
+          },
+          "createdAt": "2026-09-08T09:23:18.6676104Z",
+          "updatedAt": "2026-09-08T09:23:18.6676104Z"
+        },
+        "parameters": {
+          "width": 480,
+          "height": 848,
+          "frames": 81,
+          "skip": 0
+        },
+        "state": "remote_pending",
+        "remoteState": "",
+        "remoteId": "existing-remote",
+        "attempt": 1,
+        "revision": 2,
+        "cancelRequested": false,
+        "error": "",
+        "errorKind": "",
+        "failures": 0,
+        "nextRunAt": "2026-09-08T09:23:18.6814898Z",
+        "createdAt": "2026-09-08T09:23:18.6814898Z",
+        "updatedAt": "2026-09-08T09:23:18.6846318Z",
+        "outputIds": [],
+        "accountHash": "",
+        "providerUrl": ""
+      }
+    ],
+    "workflows": [
+      {
+        "id": "wan-animate2",
+        "name": "Wan Animate2",
+        "remoteId": "2096817694862565378",
+        "revision": 1,
+        "enabled": true,
+        "defaults": {
+          "width": 480,
+          "height": 848,
+          "frames": 0,
+          "skip": 0
+        },
+        "mapping": {
+          "frames": {
+            "nodeId": "746",
+            "fieldName": "value"
+          },
+          "height": {
+            "nodeId": "712",
+            "fieldName": "value"
+          },
+          "image": {
+            "nodeId": "189",
+            "fieldName": "image"
+          },
+          "skip": {
+            "nodeId": "747",
+            "fieldName": "value"
+          },
+          "video": {
+            "nodeId": "604",
+            "fieldName": "video"
+          },
+          "width": {
+            "nodeId": "709",
+            "fieldName": "value"
+          }
+        },
+        "createdAt": "2026-09-08T09:23:18.6676104Z",
+        "updatedAt": "2026-09-08T09:23:18.6676104Z"
+      }
+    ]
+  }
+}

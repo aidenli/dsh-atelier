@@ -1,0 +1,302 @@
+/* 媒体区域使用稳定尺寸，实际文件完整展示，不用生成示意图替代结果。 */
+.atelier .atelier-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 25px;
+  padding: 1px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 21px;
+  white-space: nowrap;
+}
+.atelier .atelier-status > svg {
+  flex: none;
+}
+.atelier-task-row,
+.atelier-workflow-row {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 16px 8px;
+  border: 0;
+  border-bottom: 1px solid var(--atelier-line);
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.atelier-task-row:hover,
+.atelier-workflow-row:hover {
+  background: var(--atelier-soft);
+}
+.atelier-task-row > img {
+  width: 64px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 6px;
+  flex: none;
+}
+.atelier-task-row > div,
+.atelier-workflow-row > div {
+  flex: 1;
+  min-width: 0;
+}
+.atelier-task-row strong,
+.atelier-workflow-row strong {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+.atelier-task-row small,
+.atelier-workflow-row small {
+  display: block;
+  margin: 4px 0;
+}
+.atelier-task-row > svg {
+  flex: none;
+}
+.atelier-asset-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 16px 0;
+}
+.atelier-asset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 250px);
+  gap: 24px 16px;
+}
+.atelier-asset-item {
+  min-width: 0;
+  width: 250px;
+  height: 250px;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) 26px 20px 32px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+}
+.atelier-asset-preview {
+  position: relative;
+  min-height: 0;
+  min-width: 0;
+  border: 1px solid var(--atelier-line);
+  border-radius: 6px;
+  background: var(--atelier-soft);
+  overflow: hidden;
+}
+/* 时间完整显示到秒，数字等宽；窄列允许折行，图标不挤压文字。 */
+.atelier-created-at {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--atelier-muted);
+  font-size: 12px;
+  line-height: 20px;
+  font-variant-numeric: tabular-nums;
+  min-width: 0;
+}
+.atelier-created-at > svg {
+  flex: none;
+}
+.atelier-created-at > span {
+  overflow-wrap: anywhere;
+}
+.atelier-task-row .atelier-created-at {
+  margin-top: 6px;
+}
+.atelier-asset-preview img,
+.atelier-asset-preview video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.atelier-asset-kind {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 7px;
+  border-radius: 4px;
+  background: #343434;
+  color: #fff;
+  font-size: 12px;
+  pointer-events: none;
+}
+.atelier-kind-image {
+  background: #294f89;
+}
+.atelier-kind-video {
+  background: #843658;
+}
+.atelier-kind-audio {
+  background: #76500d;
+}
+.atelier-audio-cover {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--atelier-muted);
+  background: var(--atelier-soft);
+}
+.atelier-audio-expanded {
+  display: block;
+  width: 100%;
+  margin: 24px 0;
+}
+
+/* 缩略图仅打开预览，使用按钮位于媒体之外，不会误触播放。 */
+.atelier-media {
+  position: relative;
+  min-width: 0;
+}
+.atelier-asset-preview > .atelier-media {
+  height: 100%;
+}
+.atelier-media-open {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+.atelier-media-open:focus-visible {
+  outline: 2px solid #6086f7;
+  outline-offset: -3px;
+}
+.atelier-media-hint,
+.atelier-media-enlarge {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  display: flex;
+  border-radius: 4px;
+  background: #000a;
+  color: #fff;
+}
+.atelier-media-hint {
+  padding: 6px;
+  pointer-events: none;
+}
+.atelier-media-enlarge button {
+  color: #fff;
+}
+.atelier-media-modal .atelier-media-expanded {
+  display: block;
+  width: 100%;
+  height: min(70vh, 680px);
+  object-fit: contain;
+  background: #111;
+}
+.atelier-media-modal .atelier-ant-modal-title {
+  overflow-wrap: anywhere;
+  padding-right: 24px;
+}
+.atelier-asset-caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.atelier-asset-caption strong {
+  font-size: 12px;
+  font-weight: 500;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.atelier-asset-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.atelier-output {
+  margin: 20px 0;
+}
+.atelier-output video {
+  display: block;
+  width: 100%;
+  max-height: 420px;
+  background: #111;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+.atelier-inputs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 20px 0;
+}
+.atelier-inputs img,
+.atelier-inputs video {
+  width: 100%;
+  height: 200px;
+  object-fit: contain;
+  background: var(--atelier-soft);
+  border-radius: 6px;
+}
+.atelier-detail-status {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 12px 0;
+}
+/* 缓慢移动的连续色带表示活动状态，不暗示远端进度百分比；文字位于其上。 */
+.atelier-running::before {
+  content: "";
+  position: absolute;
+  inset: -100% -60%;
+  z-index: -1;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    115deg,
+    transparent 0%,
+    #4779fa33 20%,
+    #da5b9e29 38%,
+    #e7b65722 52%,
+    transparent 70%
+  );
+  transform: rotate(-8deg);
+  animation: atelier-wave 7s ease-in-out infinite alternate;
+}
+@keyframes atelier-wave {
+  from {
+    transform: translateX(-12%) rotate(-8deg);
+  }
+  to {
+    transform: translateX(12%) rotate(8deg);
+  }
+}
+.atelier-paused .atelier-running::before {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .atelier-running::before {
+    animation: none;
+  }
+}
+/* 极窄详情列内缩至可用宽度，避免卡片横向挤出聊天布局。 */
+@container (max-width:281px) {
+  .atelier-asset-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .atelier-asset-item {
+    width: 100%;
+  }
+}

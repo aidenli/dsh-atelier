@@ -1,0 +1,10 @@
+node_modules/
+dist/
+lib/
+bin/
+.runtime/
+*.log
+*.sqlite*
+.env
+coverage/
+test-results/

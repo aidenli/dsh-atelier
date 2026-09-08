@@ -1,5 +1,15 @@
 # 更新记录
 
+## 未发布：Node 后端与完整源码
+
+- 公开 frontend、backend、plugin、contracts、构建脚本及模块文档。
+- 后端迁移为 TypeScript、Fastify 和 Node 内置 SQLite，安装包不再携带 Go 程序。
+- 保留原数据库、任务恢复与插件业务接口；首次切换需停止旧 Go 实例。
+- Windows 本地验收通过；Node 22.19 和 24.15 后端测试各 19 项通过，Host 测试 6 项通过。
+- Node 版本尚未在 macOS 原生验收，尚未上传新 Release 安装包。
+
+以下为旧 Go 版本记录，不代表 Node 版本的跨平台验收结果。
+
 ## 0.3.0（已验收，待正式发布）
 
 - Windows x64、macOS ARM64 和 Intel 独立预编译插件包。

@@ -1,0 +1,936 @@
+{
+  "components": {
+    "schemas": {
+      "Asset": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "deletedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "mime": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sessionId": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "sessionId",
+          "name",
+          "kind",
+          "mime",
+          "size",
+          "sha256",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "Attempt": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "number": {
+            "type": "integer"
+          },
+          "remoteId": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "taskId": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "taskId",
+          "number",
+          "remoteId",
+          "state",
+          "error",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "BatchRequest": {
+        "properties": {
+          "requestId": {
+            "type": "string"
+          },
+          "sessionId": {
+            "type": "string"
+          },
+          "tasks": {
+            "items": {
+              "$ref": "#/components/schemas/TaskSpec"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "requestId",
+          "sessionId",
+          "tasks"
+        ],
+        "type": "object"
+      },
+      "Config": {
+        "properties": {
+          "apiKey": {
+            "type": "string"
+          },
+          "baseUrl": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "baseUrl"
+        ],
+        "type": "object"
+      },
+      "DeleteAssetsRequest": {
+        "properties": {
+          "ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 200,
+            "minItems": 1,
+            "type": "array"
+          },
+          "sessionId": {
+            "description": "可选；省略表示本机全局工作台，传入时校验来源会话",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ids"
+        ],
+        "type": "object"
+      },
+      "Event": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "delivered": {
+            "type": "boolean"
+          },
+          "entityId": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "notify": {
+            "type": "boolean"
+          },
+          "seq": {
+            "type": "integer"
+          },
+          "sessionId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "seq",
+          "sessionId",
+          "entityId",
+          "kind",
+          "message",
+          "notify",
+          "delivered",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "Health": {
+        "properties": {
+          "apiVersion": {
+            "type": "integer"
+          },
+          "capabilities": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "status": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "version",
+          "apiVersion",
+          "capabilities"
+        ],
+        "type": "object"
+      },
+      "Mapping": {
+        "properties": {
+          "fieldName": {
+            "type": "string"
+          },
+          "nodeId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "nodeId",
+          "fieldName"
+        ],
+        "type": "object"
+      },
+      "Parameters": {
+        "properties": {
+          "frames": {
+            "type": "integer"
+          },
+          "height": {
+            "type": "integer"
+          },
+          "instanceType": {
+            "type": "string"
+          },
+          "skip": {
+            "type": "integer"
+          },
+          "width": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "width",
+          "height",
+          "frames",
+          "skip"
+        ],
+        "type": "object"
+      },
+      "Plan": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "fingerprint": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "sessionId": {
+            "type": "string"
+          },
+          "taskIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "sessionId",
+          "requestId",
+          "fingerprint",
+          "taskIds",
+          "createdAt"
+        ],
+        "type": "object"
+      },
+      "Task": {
+        "properties": {
+          "attempt": {
+            "type": "integer"
+          },
+          "cancelRequested": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          },
+          "errorKind": {
+            "type": "string"
+          },
+          "failures": {
+            "type": "integer"
+          },
+          "id": {
+            "type": "string"
+          },
+          "imageId": {
+            "type": "string"
+          },
+          "nextRunAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "outputIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "parameters": {
+            "$ref": "#/components/schemas/Parameters"
+          },
+          "planId": {
+            "type": "string"
+          },
+          "providerUrl": {
+            "type": "string"
+          },
+          "remoteId": {
+            "type": "string"
+          },
+          "remoteState": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer"
+          },
+          "sessionId": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "videoId": {
+            "type": "string"
+          },
+          "workflow": {
+            "$ref": "#/components/schemas/Workflow"
+          }
+        },
+        "required": [
+          "id",
+          "planId",
+          "sessionId",
+          "title",
+          "imageId",
+          "videoId",
+          "workflow",
+          "parameters",
+          "state",
+          "remoteState",
+          "remoteId",
+          "attempt",
+          "revision",
+          "cancelRequested",
+          "error",
+          "errorKind",
+          "failures",
+          "nextRunAt",
+          "createdAt",
+          "updatedAt",
+          "outputIds",
+          "providerUrl"
+        ],
+        "type": "object"
+      },
+      "TaskSpec": {
+        "properties": {
+          "imageId": {
+            "type": "string"
+          },
+          "parameters": {
+            "$ref": "#/components/schemas/Parameters"
+          },
+          "title": {
+            "type": "string"
+          },
+          "videoId": {
+            "type": "string"
+          },
+          "workflowId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "workflowId",
+          "imageId",
+          "videoId"
+        ],
+        "type": "object"
+      },
+      "Workflow": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "defaults": {
+            "$ref": "#/components/schemas/Parameters"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          },
+          "mapping": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Mapping"
+            },
+            "type": "object"
+          },
+          "name": {
+            "type": "string"
+          },
+          "remoteId": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "remoteId",
+          "revision",
+          "enabled",
+          "defaults",
+          "mapping",
+          "createdAt",
+          "updatedAt"
+        ],
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "description": "本地 API 不做请求鉴权；详细查询参数、multipart 和命令体见 docs/接口说明.md",
+    "title": "DSH Atelier Backend",
+    "version": "0.1.0"
+  },
+  "openapi": "3.0.3",
+  "paths": {
+    "/assets": {
+      "delete": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteAssetsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "成功"
+          },
+          "400": {
+            "description": "参数、业务或版本冲突"
+          }
+        },
+        "summary": "批量逻辑删除素材，保留历史引用文件"
+      },
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Asset"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "成功"
+          },
+          "400": {
+            "description": "参数、业务或版本冲突"
+          }
+        },
+        "summary": "素材列表"
+      },
+      "post": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Asset"
+                }
+              }
+            },
+            "description": "成功"
+          },
+          "400": {
+            "description": "参数、业务或版本冲突"
+          }
+        },
+        "summary": "multipart 素材上传"
+      }
+    },
+    "/assets/import": {
+      "post": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Asset"
+                }
+              }
+            },
+            "description": "成功"
+          },
+          "400": {
+            "description": "参数、业务或版本冲突"
+          }
+        },
+        "summary": "Host 专用路径导入"
+      }
+    },
+    "/assets/{id}/file": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          },
+          "400": {
+            "description": "参数、业务或版本冲突"
+          }
+        },
+        "summary": "读取文件，支持 Range"
+      },
+      "head": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          },
+          "400": {
+            "description": "参数、业务或版本冲突"
+          }
+        },
+        "summary": "读取文件头"
+      }
+    },
+    "/assets/{id}/selection": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          },
+          "400": {
+            "description": "参数、业务或版本冲突"
+          }
+        },
+        "summary": "选择素材受管路径"
+      }
+    },
+    "/config": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "成功"
+          },
+          "400": {
+            "description": "参数、业务或版本冲突"
+          }
+        },
+        "summary": "脱敏账户配置"
+      },
+      "put": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Config"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "成功"
+          },
+          "400": {
+            "description": "参数、业务或版本冲突"
+          }
+        },
+        "summary": "保存账户配置"
+      }
+    },
+    "/events": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Event"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "成功"
+          },
+          "400": {
+            "description": "参数、业务或版本冲突"
+          }
+        },
+        "summary": "事件游标或待投递通知"
+      }
+    },
+    "/events/{seq}/ack": {
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "seq",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          },
+          "400": {
+            "description": "参数、业务或版本冲突"
+          }
+        },
+        "summary": "确认通知持久化"
+      }
+    },
+    "/health": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            },
+            "description": "成功"
+          },
+          "400": {
+            "description": "参数、业务或版本冲突"
+          }
+        },
+        "summary": "连接检查及后端能力"
+      }
+    },
+    "/tasks": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "成功"
+          },
+          "400": {
+            "description": "参数、业务或版本冲突"
+          }
+        },
+        "summary": "分页筛选任务与汇总"
+      },
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Plan"
+                }
+              }
+            },
+            "description": "成功"
+          },
+          "400": {
+            "description": "参数、业务或版本冲突"
+          }
+        },
+        "summary": "幂等创建批次"
+      }
+    },
+    "/tasks/{id}": {
+      "get": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          },
+          "400": {
+            "description": "参数、业务或版本冲突"
+          }
+        },
+        "summary": "任务与尝试详情"
+      }
+    },
+    "/tasks/{id}/cancel": {
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          },
+          "400": {
+            "description": "参数、业务或版本冲突"
+          }
+        },
+        "summary": "取消任务"
+      }
+    },
+    "/tasks/{id}/reconcile": {
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          },
+          "400": {
+            "description": "参数、业务或版本冲突"
+          }
+        },
+        "summary": "关联已核对远端 ID"
+      }
+    },
+    "/tasks/{id}/retry": {
+      "post": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          },
+          "400": {
+            "description": "参数、业务或版本冲突"
+          }
+        },
+        "summary": "人工重试当前 revision"
+      }
+    },
+    "/workflows": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Workflow"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "成功"
+          },
+          "400": {
+            "description": "参数、业务或版本冲突"
+          }
+        },
+        "summary": "工作流列表"
+      }
+    },
+    "/workflows/{id}": {
+      "delete": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功"
+          },
+          "400": {
+            "description": "参数、业务或版本冲突"
+          }
+        },
+        "summary": "删除工作流定义"
+      },
+      "put": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Workflow"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "成功"
+          },
+          "400": {
+            "description": "参数、业务或版本冲突"
+          }
+        },
+        "summary": "创建或更新工作流"
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8787"
+    }
+  ]
+}

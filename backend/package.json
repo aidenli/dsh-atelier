@@ -1,0 +1,22 @@
+{
+  "name": "atelier-backend",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "node --test dist/backend/test/*.test.js",
+    "start": "node dist/backend/src/main.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "fastify": "5.12.3",
+    "@fastify/multipart": "9.3.0"
+  },
+  "devDependencies": {
+    "typescript": "5.8.3",
+    "@types/node": "22.19.0"
+  }
+}

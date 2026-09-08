@@ -1,0 +1,5 @@
+# esbuild 是本项目的明确构建依赖，允许其安装平台对应的二进制。
+allowBuilds:
+  esbuild: true
+minimumReleaseAgeExclude:
+  - antd@6.6.3

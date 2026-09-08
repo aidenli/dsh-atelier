@@ -1,0 +1,228 @@
+/* 所有几何规则限制在插件根节点，不覆盖 Ant Design 基础控件的内部样式。 */
+.atelier {
+  --atelier-bg: var(--dsw-alias-bg-base, #fff);
+  --atelier-ink: var(--dsw-alias-label-primary, #242424);
+  --atelier-muted: var(--dsw-alias-label-secondary, #777);
+  --atelier-line: var(--dsw-alias-border-l2, #e7e7e7);
+  --atelier-soft: var(--dsw-alias-interactive-bg-hover, #f5f5f5);
+  position: relative;
+  isolation: isolate;
+  color: var(--atelier-ink);
+  background: var(--atelier-bg);
+  font:
+    13px/1.5 system-ui,
+    "Microsoft YaHei",
+    sans-serif;
+  letter-spacing: 0;
+  min-width: 0;
+}
+.atelier * {
+  box-sizing: border-box;
+  letter-spacing: 0;
+}
+.atelier-workspace {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  container-type: inline-size;
+}
+.atelier h2 {
+  font-size: 20px;
+  line-height: 1.4;
+  margin: 0 0 20px;
+  overflow-wrap: anywhere;
+}
+.atelier h3 {
+  font-size: 14px;
+  margin: 24px 0 12px;
+}
+.atelier p,
+.atelier small {
+  color: var(--atelier-muted);
+}
+.atelier small {
+  font-size: 12px;
+}
+.atelier-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--atelier-line);
+  flex: none;
+}
+.atelier-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.atelier-brand strong,
+.atelier-brand small {
+  display: block;
+}
+.atelier-brand strong {
+  font-size: 20px;
+}
+.atelier-tools,
+.atelier-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.atelier-actions {
+  margin-top: 24px;
+  flex-wrap: wrap;
+}
+.atelier-content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 24px;
+  scrollbar-width: thin;
+}
+.atelier > .atelier-ant-tabs {
+  padding: 0 24px;
+  flex: none;
+}
+.atelier > .atelier-ant-tabs .atelier-ant-tabs-nav {
+  margin: 0;
+}
+.atelier > .atelier-ant-tabs .atelier-ant-tabs-content-holder {
+  display: none;
+}
+.atelier .atelier-ant-tabs-tab-btn {
+  display: flex;
+  align-items: center;
+}
+.atelier .atelier-ant-tabs-tab-icon {
+  display: flex;
+}
+.atelier-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.atelier-section-head h2 {
+  margin-bottom: 4px;
+}
+.atelier-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  padding: 8px 0 24px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--atelier-line);
+}
+.atelier-filters,
+.atelier-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.atelier-form-grid .atelier-ant-input-number {
+  width: 100%;
+}
+.atelier-mapping {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.atelier .atelier-ant-pagination {
+  margin-top: 24px;
+}
+.atelier .atelier-ant-descriptions-item-content {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.atelier .atelier-ant-empty {
+  padding: 40px 0;
+}
+.atelier-feedback {
+  margin-top: 16px;
+}
+.atelier-entry {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--dsw-alias-label-primary);
+  border-radius: 5px;
+  padding: 6px;
+  cursor: pointer;
+  min-height: 30px;
+}
+.atelier-entry:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+/* 侧栏独立尺寸与原生设置入口对齐，不放大聊天标题栏按钮。 */
+.atelier-entry-sidebar {
+  box-sizing: border-box;
+  width: 100%;
+  height: 42px;
+  flex: 1;
+  justify-content: flex-start;
+  padding: 0 10px 0 8px;
+  font: inherit;
+}
+.atelier-entry-rail {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  justify-content: center;
+  padding: 0;
+}
+.atelier-entry:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.atelier-entry:focus-visible {
+  outline: 2px solid #3563e9;
+}
+/* 临时覆盖原生轨道，卸载标记即恢复平台偏好。 */
+@media (min-width: 961px) {
+  [data-atelier-layout] {
+    grid-template-columns: var(--atelier-sidebar-width) minmax(400px, 1fr) var(
+        --atelier-panel-width
+      ) !important;
+  }
+  [data-atelier-layout] > [data-side="details"] {
+    left: calc(100% - var(--atelier-panel-width)) !important;
+  }
+}
+@container (max-width:400px) {
+  .atelier-content,
+  .atelier-header {
+    padding: 16px;
+  }
+  .atelier > .atelier-ant-tabs {
+    padding: 0 12px;
+  }
+  .atelier .atelier-ant-tabs-tab + .atelier-ant-tabs-tab {
+    margin-left: 18px;
+  }
+}
+/* Modal 的遮罩、包裹层均定位于工作台，不遮盖聊天；主题上下文由受控组件保留。 */
+.atelier .atelier-local-modal {
+  position: absolute;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+}
+.atelier .atelier-local-modal .atelier-ant-modal-mask,
+.atelier .atelier-local-modal .atelier-ant-modal-wrap {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+}
+.atelier .atelier-local-modal .atelier-ant-modal {
+  max-width: calc(100% - 32px);
+  padding-bottom: 0;
+}
