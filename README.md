@@ -16,6 +16,14 @@
 
 ## 安装
 
+正式发布后支持在线安装，无需先手动下载。Windows 示例：
+
+```sh
+pnpm dsh plugin --profile web add https://github.com/aidenli/dsh-atelier/releases/download/v0.3.0/dsh-atelier-0.3.0-win32-x64.tgz
+```
+
+Apple Silicon Mac 将文件名中的 `win32-x64` 改为 `darwin-arm64`，Intel Mac 改为 `darwin-x64`。**Release 为草稿时，以上公开下载链接尚不可用**；草稿测试请下载附件后按以下本地文件方式安装。
+
 兼容 DSH 提交：`d347e703908d0406b7a7ef80e3a0e594d86b2215`。在 DSH 源码目录运行，替换安装包路径：
 
 ```sh
