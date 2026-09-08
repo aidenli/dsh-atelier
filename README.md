@@ -2,14 +2,17 @@
 
 ## 快速安装
 
-GitHub 预构建版本已可安装，在 DSH 源码目录执行：
+npm 和 GitHub 均提供预构建版本，在 DSH 源码目录选择一种安装：
 
 ```powershell
+# npm（推荐）
+pnpm dsh plugin --profile web add dsh-atelier@0.3.1
+# 或 GitHub
 pnpm dsh plugin --profile web add github:aidenli/dsh-atelier#dist
 pnpm dsh web
 ```
 
-全局安装 DSH 时使用 `dsh` 替代 `pnpm dsh`。已有实例需正常重启；首次从 Go 迁移先停止旧后端并备份数据。npm 包尚待发布，完整说明见 [安装与发布](docs/安装与发布.md)。
+全局安装 DSH 时使用 `dsh` 替代 `pnpm dsh`。已有实例需正常重启；首次从 Go 迁移先停止旧后端并备份数据。完整说明见 [安装与发布](docs/安装与发布.md)。
 
 通过 DSH 对话创建 Wan Animate2 动作迁移任务，独立 Node 服务负责持久化排队、平台调用、恢复和结果归档，React 工作台位于原生右侧详情列。素材齐全后直接入队，没有计划确认步骤。
 
@@ -75,7 +78,7 @@ pnpm dsh plugin --profile web add E:/project/dsh-aiden/dsh-atelier/dist/dsh-atel
 pnpm dsh web
 ```
 
-本轮仅生成用于本地验收的通用包，尚未决定公开分发渠道。包内包含 React、Host、契约和预编译 `lib/backend.mjs`，无原生程序、无安装期构建。用户只需已有 DSH。macOS 尚未原生验收。
+0.3.1 通用包已通过 npm 和 GitHub dist 分支分发。包内包含 React、Host、契约和预编译 `lib/backend.mjs`，无原生程序、无安装期构建。用户只需已有 DSH。macOS 尚未原生验收。
 
 ## 使用
 
