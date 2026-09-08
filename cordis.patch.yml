@@ -1,0 +1,7 @@
+# 本地源码安装通过 link 引用此 bundle；不修改 DSH 业务源码或已有 settings 配置。
+- insert:
+    - id: atelier
+      name: dsh-atelier
+      config:
+        backendUrl: http://127.0.0.1:8787
+        mode: managed
