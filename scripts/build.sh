@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# macOS 一键构建并重启；--no-restart 仅构建，任一步失败立即停止。
+# macOS 构建入口；仅构建 Node 后端、React 前端和 DSH 插件。
 set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR/.."

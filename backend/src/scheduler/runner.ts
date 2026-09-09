@@ -15,11 +15,24 @@ import {
   retryDelay,
 } from "../runninghub/client.js";
 const later = (ms: number) => new Date(Date.now() + ms).toISOString();
+/** 将 RunningHub 的平台状态归一成本地可展示状态，保留原始状态在 remoteState。 */
+function localRemoteState(status: string): "remote_pending" | "remote_running" {
+  return /RUNNING|EXECUT|PROCESS|GENERAT|WORKING|PROGRESS/i.test(status)
+    ? "remote_running"
+    : "remote_pending";
+}
 export class Runner {
   constructor(
     readonly service: Service,
     readonly files: Files,
   ) {}
+  /**
+   * 把进程上次退出时可能遗留的中间态恢复为可继续处理的状态。
+   *
+   * uploading 没有远端任务 ID，可以安全回到 queued；submitting 则相反，
+   * 创建请求可能已经到达平台，所以有 remoteId 时只恢复查询，没有 ID 时
+   * 进入 submission_unknown，要求人工核对，禁止自动重发造成重复计费。
+   */
   recover(): void {
     for (const t of this.service.tasks()) {
       if (t.state === "submitting")
@@ -54,6 +67,14 @@ export class Runner {
       });
     }
   }
+  /**
+   * 执行一轮任务扫描。
+   *
+   * 本地任务按创建时间串行处理，单实例锁保证不会有第二个运行器同时领取
+   * 同一目录的任务。上传不受 RunningHub 生成并发限制影响；只有素材准备好
+   * 后才查询实时容量并尝试创建任务。每个 await 后都会重新从 Service 读取
+   * 任务，确保取消意图和账户切换不会被旧对象覆盖。
+   */
   async step(signal: AbortSignal): Promise<void> {
     for (const snapshot of this.service
       .tasks()
@@ -88,6 +109,13 @@ export class Runner {
       else await this.submit(client, t);
     }
   }
+  /**
+   * 准备素材并提交一个远端生成任务。
+   *
+   * 上传文件名先保存到任务快照，重启后只补传缺失文件；平台满载时保留
+   * queued 状态并延迟重试。创建请求的响应不明确时由 failure() 转为
+   * submission_unknown，后续只能人工关联远端 ID，绝不能盲目再次创建。
+   */
   private async submit(c: Client, t: Task): Promise<void> {
     const uploads: UploadSnapshot =
       t.uploads &&
@@ -178,6 +206,13 @@ export class Runner {
       v.nextRunAt = later(5000);
     });
   }
+  /**
+   * 查询已有远端任务并推进本地状态。
+   *
+   * remoteState 永远保存平台原始状态，state 保存本地下一步动作：排队、
+   * 运行中、下载、取消或终态。查询失败只改变退避信息，不会清除 remoteId，
+   * 这样重启或网络恢复后仍然查询原任务，不会重复生成。
+   */
   private async remote(c: Client, t: Task, signal: AbortSignal): Promise<void> {
     if (t.state === "downloading") {
       await this.download(t, signal);
@@ -231,7 +266,9 @@ export class Runner {
       }
     this.service.update(t.id, (v) => {
       v.remoteState = status.status;
-      v.state = v.cancelRequested ? "cancel_requested" : "remote_pending";
+      v.state = v.cancelRequested
+        ? "cancel_requested"
+        : localRemoteState(status.status);
       v.error = "";
       v.failures = 0;
       v.nextRunAt = later(5000);

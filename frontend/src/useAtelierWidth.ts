@@ -8,7 +8,8 @@ export function useAtelierWidth(ref: RefObject<HTMLElement | null>) {
       frame = frame.parentElement;
     if (!frame) return;
     const target = frame;
-    let preferredChat = 480;
+    const minChatWidth = 520;
+    let preferredChat = minChatWidth;
     let drag: { x: number; chat: number } | undefined;
     const handle = ref.current?.querySelector<HTMLElement>(".atelier-resize");
     // DSH 当前内联格式为 sidebar px / minmax / details px；只读取，不重写其拖拽偏好。
@@ -17,7 +18,7 @@ export function useAtelierWidth(ref: RefObject<HTMLElement | null>) {
       const sidebar = Number.parseFloat(tracks) || 56;
       const available = Math.max(0, target.clientWidth - sidebar);
       // 独立手柄只调整临时聊天宽度，不写入 DSH 原生偏好；默认不受原生详情上限约束。
-      const chat = Math.min(Math.max(480, preferredChat), available);
+      const chat = Math.min(Math.max(minChatWidth, preferredChat), available);
       const width = Math.max(0, available - chat);
       for (const [key, value] of [
         ["--atelier-sidebar-width", `${sidebar}px`],
@@ -36,7 +37,7 @@ export function useAtelierWidth(ref: RefObject<HTMLElement | null>) {
     };
     const move = (e: PointerEvent) => {
       if (drag) {
-        preferredChat = Math.max(480, drag.chat + e.clientX - drag.x);
+        preferredChat = Math.max(minChatWidth, drag.chat + e.clientX - drag.x);
         update();
       }
     };
@@ -45,9 +46,9 @@ export function useAtelierWidth(ref: RefObject<HTMLElement | null>) {
         e.preventDefault();
         preferredChat =
           e.key === "Home"
-            ? 480
+            ? minChatWidth
             : Math.max(
-                480,
+                minChatWidth,
                 preferredChat + (e.key === "ArrowRight" ? 24 : -24),
               );
         update();

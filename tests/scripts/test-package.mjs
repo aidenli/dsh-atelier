@@ -53,26 +53,24 @@ const reuse = new Backend(config);
 const external = new Backend({ ...config, mode: "external" });
 try {
   await backend.initialize();
-  assert.equal((await backend.request("GET", "/health")).status, "ok");
+  assert.equal((await backend.get("/getHealth")).status, "ok");
   assert.ok(
-    (await backend.request("GET", "/health")).capabilities.includes(
-      "asset-delete",
-    ),
+    (await backend.get("/getHealth")).capabilities.includes("asset-delete"),
   );
   assert.equal(
-    (await backend.request("GET", "/workflows"))[0].remoteId,
+    (await backend.get("/listWorkflows"))[0].remoteId,
     "2096817694862565378",
   );
   await assert.rejects(reuse.initialize(), /另一个 DSH/);
   await external.initialize();
   await external.stop();
   assert.equal(
-    (await backend.request("GET", "/health")).status,
+    (await backend.get("/getHealth")).status,
     "ok",
     "复用方错误终止了服务",
   );
   assert.equal(
-    (await fetch(`${backendUrl}/health`)).status,
+    (await fetch(`${backendUrl}/getHealth`)).status,
     200,
     "直接请求不需要 Authorization",
   );
@@ -84,7 +82,7 @@ try {
   await backend.stop();
 }
 await assert.rejects(
-  fetch(`${backendUrl}/health`, { signal: AbortSignal.timeout(1000) }),
+  fetch(`${backendUrl}/getHealth`, { signal: AbortSignal.timeout(1000) }),
   "托管服务退出后仍在监听",
 );
 console.log(
@@ -141,7 +139,9 @@ try {
   let stopped = false;
   for (let i = 0; i < 100; i++) {
     try {
-      await fetch(`${backendUrl}/health`, { signal: AbortSignal.timeout(300) });
+      await fetch(`${backendUrl}/getHealth`, {
+        signal: AbortSignal.timeout(300),
+      });
     } catch {
       stopped = true;
       break;

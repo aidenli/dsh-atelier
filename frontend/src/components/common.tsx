@@ -19,7 +19,8 @@ export const states: Record<string, string> = {
   queued: "本地等待",
   uploading: "上传素材",
   submitting: "提交中",
-  remote_pending: "平台处理中",
+  remote_pending: "RunningHub 排队",
+  remote_running: "RunningHub 运行中",
   downloading: "保存结果",
   succeeded: "已完成",
   failed: "失败",
@@ -31,6 +32,7 @@ export const running = new Set([
   "uploading",
   "submitting",
   "remote_pending",
+  "remote_running",
   "downloading",
 ]);
 export const settled = new Set([
@@ -69,7 +71,8 @@ const statusAppearance: Record<string, { color: string; icon: LucideIcon }> = {
   queued: { color: "gold", icon: Clock3 },
   uploading: { color: "cyan", icon: Upload },
   submitting: { color: "geekblue", icon: Send },
-  remote_pending: { color: "blue", icon: LoaderCircle },
+  remote_pending: { color: "blue", icon: Clock3 },
+  remote_running: { color: "volcano", icon: LoaderCircle },
   downloading: { color: "purple", icon: Download },
   succeeded: { color: "green", icon: CircleCheck },
   failed: { color: "red", icon: CircleX },

@@ -47,7 +47,8 @@ export interface Health {
 export interface Bridge {
   workspace: WorkspaceStore;
   openSession(sessionId: string): Promise<void>;
-  request<T>(method: string, path: string, body?: unknown): Promise<T>;
+  get<T>(path: string): Promise<T>;
+  post<T>(path: string, body?: unknown): Promise<T>;
   fileUrl(id: string, download?: boolean): string;
   upload(sessionId: string, file: File): Promise<Asset>;
   select(sessionId: string, assets: Asset[]): Promise<void>;

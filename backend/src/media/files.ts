@@ -137,7 +137,7 @@ export class Files {
     const counter = new Transform({
       transform(chunk: Buffer, _encoding, done) {
         size += chunk.length;
-        if (size > maxFileBytes) return done(new Error("文件超过 512 MiB"));
+        if (size > maxFileBytes) return done(new Error("文件超过 30 MiB"));
         digest.update(chunk);
         done(null, chunk);
       },

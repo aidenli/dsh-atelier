@@ -12,7 +12,7 @@ export function PluginVersion({ bridge }: { bridge: Bridge }) {
     let active = true;
     const check = async () => {
       try {
-        const value = await bridge.request<VersionInfo>("GET", "/version");
+        const value = await bridge.get<VersionInfo>("/getVersion");
         if (active) setInfo(value);
       } catch {
         if (active)

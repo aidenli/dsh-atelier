@@ -1,4 +1,4 @@
-/** 分发唯一入口：prepare 只打包验收；npm/github 必须显式指定，不自动发布源码。 */
+/** 分发入口：默认只打包，all 串联源码、安装入口、npm 与正式 Release。 */
 import { spawnSync } from "node:child_process";
 import { mkdir, mkdtemp, readFile, cp } from "node:fs/promises";
 import { dirname, resolve, join } from "node:path";
@@ -13,8 +13,12 @@ const { values } = parseArgs({
     archive: { type: "string" },
   },
 });
-if (!["prepare", "npm", "github"].includes(values.channel))
-  throw new Error("channel 仅支持 prepare、npm、github");
+if (!["prepare", "npm", "github", "all"].includes(values.channel))
+  throw new Error("channel 仅支持 prepare、npm、github、all");
+if (values.channel === "all") {
+  await import("./internal/distribute-all.mjs");
+  process.exit(0);
+}
 
 /** 参数通过 argv 传递；npm Windows 启动器用 Node 直接运行，避免 shell 字符串解释。 */
 function run(file, args, cwd = root, capture = false) {

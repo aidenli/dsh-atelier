@@ -270,7 +270,15 @@ export class Service {
       .filter((a) => a.taskId === key)
       .sort((a, b) => a.number - b.number);
   }
-  /** 所有素材检查、快照及批次落库在同一个同步事务内完成；容量不影响本地入队。 */
+  /**
+   * 把一批用户输入转换为本地计划、项目和任务。
+   *
+   * 这里故意只做同步数据库操作：素材存在性、素材类型、工作流快照、
+   * 稳定请求幂等键和任务初始事件必须在同一事务中完成。RunningHub 容量
+   * 查询属于网络操作，不能放进事务，也不能阻止本地入队；调度器之后再
+   * 根据最新容量决定何时提交远端任务。重复 requestId 只返回原计划，
+   * 因而模型重试或页面重复点击不会产生第二组付费任务。
+   */
   admit(r: BatchRequest): Plan {
     if (
       typeof r?.sessionId !== "string" ||
@@ -332,6 +340,7 @@ export class Service {
           sessionId: r.sessionId,
           title,
           imageId: image.id,
+          platform: "runninghub",
           videoId: video.id,
           workflow: w,
           parameters: p,
@@ -368,11 +377,27 @@ export class Service {
     this.wake();
     return plan;
   }
-  /** 网络返回后重新读取任务，保留期间发生的取消意图；实体、尝试、通知必须一起提交。 */
+  /**
+   * 在一个同步事务内应用一次任务状态变化。
+   *
+   * 调度器在网络操作前后都会重新读取任务，因此取消按钮在网络请求期间
+   * 写入的 cancelRequested 不会被旧快照覆盖。attempts 与 tasks 同事务更新，
+   * 事件也在同一事务追加。revision/updatedAt 即使没有可观察状态变化也会
+   * 更新，但事件只记录真正影响页面、恢复或人工处理的字段，避免轮询制造
+   * 重复事件。
+   */
   update(key: string, fn: (task: Task) => void): void {
     this.store.tx(() => {
       const t = this.task(key),
-        previous = t.state;
+        previous = {
+          state: t.state,
+          remoteState: t.remoteState,
+          remoteId: t.remoteId,
+          error: t.error,
+          errorKind: t.errorKind,
+          cancelRequested: t.cancelRequested,
+          outputIds: [...t.outputIds],
+        };
       fn(t);
       t.updatedAt = now();
       t.revision++;
@@ -391,15 +416,27 @@ export class Service {
           updatedAt: t.updatedAt,
         });
       }
-      const changed = previous !== t.state && terminal(t.state);
+      // 调度器每次轮询都会调用 update，但轮询本身不是用户可观察的事件。
+      // 只有真正影响任务展示、恢复或操作结果的字段发生变化时才追加事件，
+      // 否则一个远端任务在等待几十分钟时会产生数百条完全相同的事件。
+      const changed =
+        previous.state !== t.state ||
+        previous.remoteState !== t.remoteState ||
+        previous.remoteId !== t.remoteId ||
+        previous.error !== t.error ||
+        previous.errorKind !== t.errorKind ||
+        previous.cancelRequested !== t.cancelRequested ||
+        JSON.stringify(previous.outputIds) !== JSON.stringify(t.outputIds);
+      const terminalChanged = previous.state !== t.state && terminal(t.state);
+      if (!changed) return;
       this.store.event(
         t.sessionId,
         key,
         "task",
         `${t.title}: ${t.state}${t.error ? " — " + t.error : ""}`,
-        changed && ["failed", "submission_unknown"].includes(t.state),
+        terminalChanged && ["failed", "submission_unknown"].includes(t.state),
       );
-      if (!changed) return;
+      if (!terminalChanged) return;
       const plan = this.store.require<Plan>("plans", t.planId),
         counts: Record<string, number> = {};
       for (const tid of plan.taskIds) {

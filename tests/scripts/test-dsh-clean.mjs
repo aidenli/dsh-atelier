@@ -126,8 +126,30 @@ try {
   await expect(page.locator(".atelier-entry-sidebar")).toBeVisible({
     timeout: 30000,
   });
-  const health = await fetch(`${backendUrl}/health`);
+  const health = await fetch(`${backendUrl}/getHealth`);
   assert.equal(health.status, 200);
+  // 直接验证 DSH 同源注册路由，禁止用统一 Remote POST 冒充 GET 读取。
+  const api = await page.evaluate(async () => {
+    const config = await fetch("/api/atelier.getConfig");
+    const saved = await fetch("/api/atelier.saveConfig", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        baseUrl: "https://www.runninghub.cn",
+        apiKey: "",
+      }),
+    });
+    return {
+      configStatus: config.status,
+      config: await config.json(),
+      savedStatus: saved.status,
+      saved: await saved.json(),
+    };
+  });
+  assert.equal(api.configStatus, 200);
+  assert.equal(api.config.hasApiKey, false);
+  assert.equal(api.savedStatus, 200);
+  assert.equal(api.saved.saved, true);
   const continueButton = page.getByRole("button", {
     name: "继续",
     exact: true,
@@ -169,11 +191,11 @@ try {
         ),
       ),
     )
-    .toBeGreaterThanOrEqual(480);
+    .toBeGreaterThanOrEqual(520);
   const columns = await grid.evaluate((e) =>
     getComputedStyle(e).gridTemplateColumns.split(" ").map(Number.parseFloat),
   );
-  assert.ok(Math.abs(columns[1] - 480) < 2, "默认聊天宽度应为480px");
+  assert.ok(Math.abs(columns[1] - 520) < 2, "默认聊天宽度应为520px");
   assert.ok(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
@@ -192,7 +214,7 @@ try {
         (e) =>
           Number.parseFloat(
             getComputedStyle(e).gridTemplateColumns.split(" ")[1],
-          ) >= 480,
+          ) >= 520,
       ),
     );
   }
@@ -266,7 +288,9 @@ try {
   let stopped = false;
   for (let i = 0; i < 100; i++) {
     try {
-      await fetch(`${backendUrl}/health`, { signal: AbortSignal.timeout(300) });
+      await fetch(`${backendUrl}/getHealth`, {
+        signal: AbortSignal.timeout(300),
+      });
     } catch {
       stopped = true;
       break;

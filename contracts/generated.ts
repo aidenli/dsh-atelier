@@ -112,6 +112,8 @@ export interface ProjectPage {
 
 /** Task：公开接口类型，不包含后端内部执行字段。 */
 export interface Task {
+  platform?: string;
+  outputs?: Asset[];
   attempt: number;
   cancelRequested: boolean;
   createdAt: string;

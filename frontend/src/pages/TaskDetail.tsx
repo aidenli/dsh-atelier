@@ -1,11 +1,10 @@
 /** 详情独立刷新，不依赖列表筛选；操作后从数据库重读，避免伪造终态。 */
-import { Alert, Button, Descriptions, Form, Input } from "antd";
-import { ArrowLeft, Download, RefreshCw, X, MessageSquare } from "lucide-react";
+import { Alert, Button, Form, Input, Tag } from "antd";
+import { ArrowLeft, RefreshCw, X, MessageSquare } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { Bridge, Task } from "../../../contracts/types";
+import type { Asset, Bridge, Task } from "../../../contracts/types";
 import { message, running, settled, Status } from "../components/common";
-import { MediaPreview } from "../components/MediaPreview";
-import { CreatedAt } from "../components/CreatedAt";
+import { RunningHubTask } from "../components/RunningHubTask";
 export function TaskDetail({
   id,
   bridge,
@@ -21,32 +20,54 @@ export function TaskDetail({
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [remoteId, setRemoteId] = useState("");
-  const path = `/tasks/${id}`;
+  const path = `/getTask?id=${encodeURIComponent(id)}`;
+  /** 旧后端只返回 outputIds，按素材 ID 补齐类型，不能根据扩展名猜测媒体种类。 */
+  async function loadTask(): Promise<Task> {
+    const { task } = await bridge.get<{ task: Task }>(path);
+    if (task.outputs === undefined && task.outputIds.length) {
+      const assets = await bridge.get<Asset[]>("/listAssets");
+      return {
+        ...task,
+        outputs: assets.filter((asset) => task.outputIds.includes(asset.id)),
+      };
+    }
+    return task;
+  }
   useEffect(() => {
     let stopped = false;
-    let timer: ReturnType<typeof setTimeout>;
-    async function poll() {
+    /** 首次进入详情读取完整快照，后续由全局事件游标驱动增量刷新。 */
+    async function load() {
       try {
-        const result = await bridge.request<{ task: Task }>("GET", path);
-        if (!stopped) setTask(result.task);
+        const result = await loadTask();
+        if (!stopped) setTask(result);
       } catch (e) {
         if (!stopped) setError(message(e));
       }
-      if (!stopped) timer = setTimeout(poll, 2000);
     }
-    void poll();
+    const onEvents = (event: Event) => {
+      const events = (event as CustomEvent<{ entityId?: string }[]>).detail;
+      // 只有当前任务对应的事件才刷新详情，项目和其他任务事件直接忽略。
+      if (events.some((item) => item.entityId === id)) void load();
+    };
+    void load();
+    window.addEventListener("atelier:events", onEvents);
     return () => {
       stopped = true;
-      clearTimeout(timer);
+      window.removeEventListener("atelier:events", onEvents);
     };
   }, [bridge, path]);
   async function action(command: string, body?: unknown) {
     setBusy(true);
     setError("");
     try {
-      await bridge.request("POST", `/tasks/${id}/${command}`, body);
-      const result = await bridge.request<{ task: Task }>("GET", path);
-      setTask(result.task);
+      const operation = {
+        cancel: "cancelTask",
+        retry: "retryTask",
+        reconcile: "reconcileTask",
+      }[command];
+      if (!operation) throw new Error("未知任务操作");
+      await bridge.post(`/${operation}?id=${encodeURIComponent(id)}`, body);
+      setTask(await loadTask());
     } catch (e) {
       setError(message(e));
     } finally {
@@ -72,70 +93,17 @@ export function TaskDetail({
             className={`atelier-detail-status ${running.has(task.state) ? "atelier-running" : ""}`}
           >
             <Status state={task.state} />
+            <Tag>
+              {(task.platform || "runninghub") === "runninghub"
+                ? "RunningHub"
+                : task.platform}
+            </Tag>
           </div>
-          {task.outputIds.map((output) => (
-            <div className="atelier-output" key={output}>
-              <MediaPreview
-                src={bridge.fileUrl(output)}
-                kind="video"
-                title="生成结果视频"
-                controls
-              />
-              <Button
-                href={bridge.fileUrl(output, true)}
-                download
-                icon={<Download size={16} />}
-              >
-                下载视频
-              </Button>
-            </div>
-          ))}
-          <div className="atelier-inputs">
-            <MediaPreview
-              src={bridge.fileUrl(task.imageId)}
-              kind="image"
-              title="人物参考图"
-            />
-            <MediaPreview
-              src={bridge.fileUrl(task.videoId)}
-              kind="video"
-              title="动作参考视频"
-              controls
-            />
-          </div>
-          <Descriptions
-            column={1}
-            size="small"
-            items={[
-              { key: "id", label: "任务 ID", children: task.id },
-              {
-                key: "remote",
-                label: "远端 ID",
-                children: task.remoteId || "未提交",
-              },
-              {
-                key: "workflow",
-                label: "工作流",
-                children: `${task.workflow.name} · v${task.workflow.revision}`,
-              },
-              {
-                key: "size",
-                label: "尺寸",
-                children: `${task.parameters.width} × ${task.parameters.height}`,
-              },
-              {
-                key: "frames",
-                label: "读取 / 跳过帧数",
-                children: `${task.parameters.frames || "全部"} / ${task.parameters.skip}`,
-              },
-              {
-                key: "created",
-                label: "创建时间",
-                children: <CreatedAt value={task.createdAt} />,
-              },
-              { key: "error", label: "失败原因", children: task.error || "无" },
-            ]}
-          />
+          {(task.platform || "runninghub") === "runninghub" ? (
+            <RunningHubTask task={task} bridge={bridge} />
+          ) : (
+            <Alert type="warning" title={`暂不支持平台：${task.platform}`} />
+          )}
           <div className="atelier-actions">
             {!settled.has(task.state) && (
               <Button

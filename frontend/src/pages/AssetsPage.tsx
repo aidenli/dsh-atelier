@@ -46,7 +46,7 @@ export function AssetsPage({
     locked.current = true;
     setDeletingNow(true);
     try {
-      await bridge.request("DELETE", "/assets", { ids: deleting });
+      await bridge.post("/deleteAssets", { ids: deleting });
       setDeleting([]);
       await model.refresh();
     } catch (e) {

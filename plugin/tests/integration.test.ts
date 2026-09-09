@@ -94,9 +94,9 @@ test("素材查询全局可见，任务查询仍绑定当前会话", async () =>
     },
   };
   const backend = {
-    request: async (_method: string, path: string) => {
+    get: async (path: string) => {
       paths.push(path);
-      return path === "/assets" ? assets : [];
+      return path === "/listAssets" ? assets : [];
     },
   };
   const dispose = registerMediaTools(
@@ -117,8 +117,8 @@ test("素材查询全局可见，任务查询仍绑定当前会话", async () =>
       .get("atelier_task_list")!
       .execute({ payload: '{"sessionId":"other"}' }, execution);
     assert.deepEqual(paths, [
-      "/assets",
-      "/tasks?sessionId=owner&page=1&state=",
+      "/listAssets",
+      "/listTasks?sessionId=owner&page=1&state=",
     ]);
   } finally {
     dispose();
@@ -276,10 +276,8 @@ test("外部服务无需令牌、URL 持久化与路径限制", async (t) => {
   const backendUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   const backend = new Backend({ dataDir: dir, mode: "external", backendUrl });
   await backend.initialize();
-  assert.deepEqual(await backend.request("GET", "/health"), { status: "ok" });
-  await assert.rejects(
-    backend.request("POST", "/assets/import", { path: "not-allowed" }),
-  );
+  assert.deepEqual(await backend.get("/getHealth"), { status: "ok" });
+  await assert.rejects(backend.post("/importAsset", { path: "not-allowed" }));
   await assert.rejects(
     backend.connection({ mode: "managed", backendUrl: "https://example.com" }),
   );
@@ -334,11 +332,11 @@ test("通知重投递使用稳定 ID，持久化失败不得确认", async () =>
     },
   };
   const fakeBackend = {
-    request: async (method: string) => {
-      if (method === "POST") {
-        acknowledgements++;
-        return {};
-      }
+    post: async () => {
+      acknowledgements++;
+      return {};
+    },
+    get: async () => {
       return [
         { seq: 1, sessionId: "test", entityId: "task-1", message: "批次完成" },
       ];
@@ -355,15 +353,10 @@ test("通知重投递使用稳定 ID，持久化失败不得确认", async () =>
   // 模拟 Host 重启：新投递器从旧会话日志发现相同 ID，不会再次注入。
   failFlush = false;
   const acknowledged = new Promise<void>((resolve) => {
-    fakeBackend.request = async (method: string) => {
-      if (method === "POST") {
-        acknowledgements++;
-        resolve();
-        return {};
-      }
-      return [
-        { seq: 1, sessionId: "test", entityId: "task-1", message: "批次完成" },
-      ];
+    fakeBackend.post = async () => {
+      acknowledgements++;
+      resolve();
+      return {};
     };
   });
   installNotifications(

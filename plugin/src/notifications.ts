@@ -1,7 +1,6 @@
 /** 持久化事件投递：先注入 DSH 日志并 flush，成功后才确认后端事件。 */
 import type { Context } from "@deepseek-ai/cordis";
 import type {} from "@deepseek-ai/dsh-agent";
-import { SessionId } from "@deepseek-ai/dsh-session";
 import { MessageId, freezeMessage } from "@deepseek-ai/dsh-llm";
 import type { Backend } from "./backend.ts";
 
@@ -23,18 +22,24 @@ export function installNotifications(ctx: Context, backend: Backend): void {
   let active: Promise<void> = Promise.resolve();
   const pending = new Set<string>();
   async function deliver(): Promise<void> {
+    // 通知游标独立于页面游标；页面读取事件不能确认会话通知。
     let cursor = 0;
     // 分页扫描防止前 200 条都属于关闭会话时，后续可投递会话永远饥饿。
     while (!stopped) {
-      const events = (await backend.request(
-        "GET",
-        `/events?notifications=1&after=${cursor}`,
+      const events = (await backend.get(
+        `/listEvents?notifications=1&after=${cursor}`,
       )) as Notice[];
       if (!events.length) return;
       for (const event of events) {
         cursor = event.seq;
         if (stopped) return;
-        const agent = ctx.agents.get(SessionId(event.sessionId));
+        // sessionId 来自 SQLite，是运行时字符串。这里不能调用插件自身
+        // node_modules 中的 SessionId 构造器，因为 DSH 源码工作区会提供
+        // 另一份同名品牌类型；两者运行时等价，但 TypeScript 会拒绝互传。
+        const sessionId = event.sessionId as Parameters<
+          typeof ctx.agents.get
+        >[0];
+        const agent = ctx.agents.get(sessionId);
         if (!agent) continue;
         const id = MessageId(`atelier-event-${event.seq}-${event.entityId}`);
         // 若上次在 DSH flush 成功后、后端 ack 前退出，稳定消息 ID 可从历史中去重。
@@ -59,7 +64,7 @@ export function installNotifications(ctx: Context, backend: Backend): void {
         }
         // 没有持久化监听器时不确认投递；事件留在后端，稍后恢复。
         if (await ctx.sessions.flush(agent.session)) {
-          await backend.request("POST", `/events/${event.seq}/ack`);
+          await backend.post(`/ackEvent?seq=${event.seq}`);
           pending.delete(id);
         }
       }

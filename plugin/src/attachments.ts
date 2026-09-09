@@ -36,9 +36,8 @@ export async function importSessionAttachments(
           : ctx.attachments.fileHostPath(block.attachment);
       if (!path)
         throw new Error("当前 DSH 附件存储不提供本机路径，请改用工作台上传");
-      await backend.request(
-        "POST",
-        "/assets/import",
+      await backend.post(
+        "/importAsset",
         {
           sessionId: agent.id,
           path,

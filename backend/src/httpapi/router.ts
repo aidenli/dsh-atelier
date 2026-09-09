@@ -12,7 +12,11 @@ const number = (v: unknown, fallback: number, max: number) =>
 const text = (v: unknown) => (typeof v === "string" ? v : "");
 const publicTask = (t: Task) => {
   const { results, uploads, accountHash, ...value } = t;
-  return { ...value, accountHash: "" };
+  return {
+    ...value,
+    platform: value.platform || "runninghub",
+    accountHash: "",
+  };
 };
 export async function router(
   service: Service,
@@ -56,11 +60,11 @@ export async function router(
       : e.message;
     reply.code(e.statusCode === 413 ? 413 : 400).send({ error: message });
   });
-  app.get("/health", () => ({
+  app.get("/getHealth", () => ({
     status: "ok",
     version: "0.3.0",
-    apiVersion: 1,
-    capabilities: ["asset-delete"],
+    apiVersion: 2,
+    capabilities: ["asset-delete", "operation-api"],
     runtime: "node",
   }));
   if (shutdown)
@@ -68,17 +72,17 @@ export async function router(
       reply.code(202).send({ accepted: true });
       setImmediate(shutdown);
     });
-  app.get("/config", () => {
+  app.get("/getConfig", () => {
     const c = service.getConfig();
     return { baseUrl: c.baseUrl, hasApiKey: Boolean(c.apiKey) };
   });
-  app.put<{ Body: Config }>("/config", (r) => {
+  app.post<{ Body: Config }>("/saveConfig", (r) => {
     service.saveConfig(r.body);
     return { saved: true };
   });
-  app.get("/workflows", () => service.workflows());
+  app.get("/listWorkflows", () => service.workflows());
   app.get<{ Querystring: { type?: string; page?: string } }>(
-    "/projects",
+    "/listProjects",
     (r) => {
       const items = service
         .projects()
@@ -96,34 +100,37 @@ export async function router(
       };
     },
   );
-  app.get<{ Params: { id: string } }>("/projects/:id", (r) => {
-    const project = service.project(r.params.id);
+  app.get<{ Querystring: { id: string } }>("/getProject", (r) => {
+    const project = service.project(r.query.id);
     return {
       project: service.projectSummary(project),
       tasks: project.taskIds.map((id) => publicTask(service.task(id))),
     };
   });
-  app.put<{ Params: { id: string }; Body: Workflow }>("/workflows/:id", (r) => {
-    service.saveWorkflow({ ...r.body, id: r.params.id });
-    return { saved: true };
-  });
-  app.delete<{ Params: { id: string } }>("/workflows/:id", (r) => {
-    service.deleteWorkflow(r.params.id);
+  app.post<{ Querystring: { id: string }; Body: Workflow }>(
+    "/saveWorkflow",
+    (r) => {
+      service.saveWorkflow({ ...r.body, id: r.query.id });
+      return { saved: true };
+    },
+  );
+  app.post<{ Querystring: { id: string } }>("/deleteWorkflow", (r) => {
+    service.deleteWorkflow(r.query.id);
     return { deleted: true };
   });
-  app.get<{ Querystring: { sessionId?: string } }>("/assets", (r) =>
+  app.get<{ Querystring: { sessionId?: string } }>("/listAssets", (r) =>
     service
       .assets(text(r.query.sessionId))
       .map(({ path, ...asset }) => ({ ...asset, path: "" })),
   );
-  app.delete<{ Body: { sessionId?: string; ids: string[] } }>(
-    "/assets",
+  app.post<{ Body: { sessionId?: string; ids: string[] } }>(
+    "/deleteAssets",
     (r) => {
       service.deleteAssets(text(r.body?.sessionId), r.body?.ids);
       return { deleted: true };
     },
   );
-  app.post("/assets", async (r) => {
+  app.post("/uploadAsset", async (r) => {
     // 暂存上传流后才读取字段，支持 multipart 中 sessionId 位于 file 后面。
     const part = await r.file();
     if (!part) throw new Error("缺少上传文件");
@@ -154,7 +161,7 @@ export async function router(
   });
   app.post<{
     Body: { sessionId: string; path: string; sourceId?: string; name?: string };
-  }>("/assets/import", async (r) => {
+  }>("/importAsset", async (r) => {
     const { path, ...a } = await files.importReference(
       r.body.sessionId,
       r.body.path,
@@ -163,25 +170,24 @@ export async function router(
     );
     return { ...a, path: "" };
   });
-  app.get<{ Params: { id: string }; Querystring: { sessionId?: string } }>(
-    "/assets/:id/selection",
+  app.get<{ Querystring: { id: string; sessionId?: string } }>(
+    "/getAssetSelection",
     async (r) => {
       const { asset, path } = await files.asset(
-        r.params.id,
+        r.query.id,
         text(r.query.sessionId),
       );
       return { id: asset.id, name: asset.name, absolutePath: path };
     },
   );
   app.route<{
-    Params: { id: string };
-    Querystring: { sessionId?: string; download?: string };
+    Querystring: { id: string; sessionId?: string; download?: string };
   }>({
     method: ["GET", "HEAD"],
-    url: "/assets/:id/file",
+    url: "/getAssetFile",
     handler: async (r, reply) => {
       const { asset, path } = await files.asset(
-        r.params.id,
+        r.query.id,
         text(r.query.sessionId),
       );
       reply
@@ -226,7 +232,9 @@ export async function router(
         : reply.send(createReadStream(path, { start, end }));
     },
   });
-  app.post<{ Body: BatchRequest }>("/tasks", (r) => service.admit(r.body));
+  app.post<{ Body: BatchRequest }>("/createTasks", (r) =>
+    service.admit(r.body),
+  );
   app.get<{
     Querystring: {
       sessionId?: string;
@@ -234,7 +242,7 @@ export async function router(
       page?: string;
       pageSize?: string;
     };
-  }>("/tasks", (r) => {
+  }>("/listTasks", (r) => {
     const summary: Record<string, number> = {},
       all = service
         .tasks()
@@ -252,50 +260,70 @@ export async function router(
       page,
     };
   });
-  app.get<{ Params: { id: string }; Querystring: { sessionId?: string } }>(
-    "/tasks/:id",
+  app.get<{ Querystring: { id: string; sessionId?: string } }>(
+    "/getTask",
     (r) => ({
-      task: publicTask(service.task(r.params.id, text(r.query.sessionId))),
-      attempts: service.attempts(r.params.id),
+      task: (() => {
+        const task = service.task(r.query.id, text(r.query.sessionId));
+        // 从历史素材表读取输出，逻辑删除不影响任务归档；绝不返回受管路径。
+        const outputs = task.outputIds.flatMap((id) => {
+          const asset = service.store.get<import("../media/types.js").Asset>(
+            "assets",
+            id,
+          );
+          if (!asset) return [];
+          const { path, ...publicAsset } = asset;
+          return [publicAsset];
+        });
+        return { ...publicTask(task), outputs };
+      })(),
+      attempts: service.attempts(r.query.id),
     }),
   );
-  app.post<{ Params: { id: string }; Querystring: { sessionId?: string } }>(
-    "/tasks/:id/cancel",
+  app.post<{ Querystring: { id: string; sessionId?: string } }>(
+    "/cancelTask",
     (r) => {
-      service.cancel(r.params.id, text(r.query.sessionId));
+      service.cancel(r.query.id, text(r.query.sessionId));
       return { accepted: true };
     },
   );
   app.post<{
-    Params: { id: string };
-    Querystring: { sessionId?: string };
+    Querystring: { id: string; sessionId?: string };
     Body: { revision: number };
-  }>("/tasks/:id/retry", (r) => {
-    service.retry(r.params.id, text(r.query.sessionId), r.body.revision);
+  }>("/retryTask", (r) => {
+    service.retry(r.query.id, text(r.query.sessionId), r.body.revision);
     return { accepted: true };
   });
-  app.post<{ Params: { id: string }; Body: { remoteId: string } }>(
-    "/tasks/:id/reconcile",
+  app.post<{ Querystring: { id: string }; Body: { remoteId: string } }>(
+    "/reconcileTask",
     (r) => {
-      service.reconcile(r.params.id, r.body.remoteId);
+      service.reconcile(r.query.id, r.body.remoteId);
       return { accepted: true };
     },
   );
+  /**
+   * 全局事件增量接口：after 是客户端已确认的最大 seq。
+   *
+   * 事件表是页面同步的唯一增量来源。接口不按 sessionId 过滤，因为项目、
+   * 任务和后台调度是全局可见的；客户端必须持久化最后一个 seq，并在收到
+   * 空数组时保持原游标。单次最多返回 200 条，客户端继续使用最后一条 seq
+   * 查询，避免一次响应过大时丢失中间事件。
+   */
   app.get<{ Querystring: { after?: string; notifications?: string } }>(
-    "/events",
+    "/listEvents",
     (r) =>
       service.store.events(
         number(r.query.after, 0, Number.MAX_SAFE_INTEGER),
         r.query.notifications === "1",
       ),
   );
-  app.post<{ Params: { seq: string } }>("/events/:seq/ack", (r) => {
+  app.post<{ Querystring: { seq: string } }>("/ackEvent", (r) => {
     if (
-      !/^\d+$/.test(r.params.seq) ||
-      !Number.isSafeInteger(Number(r.params.seq))
+      !/^\d+$/.test(r.query.seq) ||
+      !Number.isSafeInteger(Number(r.query.seq))
     )
       throw new Error("事件序号无效");
-    service.store.acknowledge(Number(r.params.seq));
+    service.store.acknowledge(Number(r.query.seq));
     return { acknowledged: true };
   });
   return app;

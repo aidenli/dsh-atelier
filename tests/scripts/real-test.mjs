@@ -35,7 +35,7 @@ try {
   // 先保存素材身份，再创建批次；即使创建响应丢失，重跑也使用同一 requestId 和素材。
   const assets = [];
   for (const path of inputs)
-    assets.push(await api("/assets/import", { sessionId, path }));
+    assets.push(await api("/importAsset", { sessionId, path }));
   record = {
     sessionId,
     requestId: "wan-animate2-one-real-test-81-v1",
@@ -45,7 +45,7 @@ try {
   await writeFile(recordPath, JSON.stringify(record, null, 2));
 }
 if (!record.taskId) {
-  const plan = await api("/tasks", {
+  const plan = await api("/createTasks", {
     sessionId,
     requestId: record.requestId,
     tasks: [
@@ -61,7 +61,7 @@ if (!record.taskId) {
   record.taskId = plan.taskIds[0];
   await writeFile(recordPath, JSON.stringify(record, null, 2));
 }
-const { task } = await api(`/tasks/${record.taskId}`);
+const { task } = await api(`/getTask?id=${record.taskId}`);
 console.log(
   JSON.stringify(
     {

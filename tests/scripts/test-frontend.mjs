@@ -44,6 +44,7 @@ try {
   let holdTasks = false,
     releaseLate;
   let assets = [{ id: "a", name: "测试素材.png", kind: "image", size: 100 }];
+  let hasApiKey = true;
   let version = {
     current: "0.3.1",
     latest: "0.3.2",
@@ -53,7 +54,9 @@ try {
   };
   await page.route("**/mock/**", async (route) => {
     const url = new URL(route.request().url());
-    if (url.pathname === "/mock/version")
+    if (url.pathname === "/mock/getConfig")
+      return route.fulfill({ json: { hasApiKey } });
+    if (url.pathname === "/mock/getVersion")
       return route.fulfill({
         json: version,
       });
@@ -62,7 +65,10 @@ try {
       false,
       "工作台查询不按会话过滤",
     );
-    if (route.request().method() === "DELETE") {
+    if (
+      route.request().method() === "POST" &&
+      url.pathname === "/mock/deleteAssets"
+    ) {
       deleteCalls++;
       if (failDelete)
         return route.fulfill({ status: 404, body: "404 page not found" });
@@ -73,7 +79,13 @@ try {
       id: "t",
       title: holdTasks ? "stale" : "all",
       sessionId: "origin",
-      outputIds: [],
+      outputIds: ["result-image", "result-video", "result-audio"],
+      platform: "runninghub",
+      outputs: ["image", "video", "audio"].map((kind) => ({
+        id: `result-${kind}`,
+        kind,
+        name: `生成${kind}`,
+      })),
       videoId: "v",
       workflow: { name: "Wan", revision: 1 },
       createdAt: "2026-09-08T00:00:00Z",
@@ -82,7 +94,7 @@ try {
       imageId: "a",
     };
     const payload =
-      url.pathname === "/mock/projects"
+      url.pathname === "/mock/listProjects"
         ? {
             items: [
               {
@@ -100,7 +112,7 @@ try {
             page: 1,
             total: 1,
           }
-        : url.pathname === "/mock/projects/p"
+        : url.pathname === "/mock/getProject"
           ? {
               project: {
                 id: "p",
@@ -111,23 +123,23 @@ try {
               },
               tasks: [task],
             }
-          : url.pathname === "/mock/health"
+          : url.pathname === "/mock/getHealth"
             ? legacy
               ? {}
               : { capabilities: ["asset-delete"] }
-            : url.pathname === "/mock/assets"
+            : url.pathname === "/mock/listAssets"
               ? assets
-              : url.pathname === "/mock/tasks"
+              : url.pathname === "/mock/listTasks"
                 ? {
                     items: [task],
                     total: 1,
                     page: 1,
                     summary: { remote_pending: 1 },
                   }
-                : url.pathname === "/mock/tasks/t"
+                : url.pathname === "/mock/getTask"
                   ? { task }
                   : [];
-    if (holdTasks && url.pathname === "/mock/tasks") {
+    if (holdTasks && url.pathname === "/mock/listTasks") {
       holdTasks = false;
       await new Promise((resolve) => {
         releaseLate = resolve;
@@ -136,6 +148,7 @@ try {
     await route.fulfill({ json: payload });
   });
   await page.goto(`http://127.0.0.1:${server.address().port}`);
+  await expect(page.getByRole("heading", { name: "动作迁移" })).toBeVisible();
   await expect(page.getByText("v0.3.1", { exact: true })).toBeVisible();
   await expect(
     page.locator(".atelier-version .atelier-ant-badge-dot"),
@@ -247,7 +260,7 @@ try {
   await page.getByRole("button", { name: "模拟会话切换" }).click();
   await expect(page.locator(".atelier-task-row strong")).toHaveText("all");
   const lateResponse = page.waitForResponse(
-    (response) => new URL(response.url()).pathname === "/mock/tasks",
+    (response) => new URL(response.url()).pathname === "/mock/listTasks",
   );
   releaseLate();
   await (await lateResponse).finished();
@@ -260,6 +273,17 @@ try {
   await expect(page.locator(".atelier-task-row strong")).toHaveText("all");
   await expect(page.getByRole("combobox", { name: "会话范围" })).toHaveCount(0);
   await page.locator(".atelier-task-row").click();
+  await expect(
+    page.getByRole("textbox", { name: "nodeInfoList JSON" }),
+  ).toBeVisible();
+  const nodes = JSON.parse(
+    await page.getByRole("textbox", { name: "nodeInfoList JSON" }).inputValue(),
+  );
+  assert.equal(nodes.length, 6);
+  await expect(page.locator(".atelier-output img")).toHaveCount(1);
+  await expect(page.locator(".atelier-output video")).toHaveCount(1);
+  await expect(page.locator(".atelier-output audio")).toHaveCount(1);
+  await page.screenshot({ path: resolve(out, "runninghub-task.png") });
   await page.getByRole("button", { name: "模拟会话切换" }).click();
   await expect(
     page.getByRole("button", { name: "打开来源会话" }),
@@ -306,6 +330,16 @@ try {
       page.locator(".atelier-version .atelier-ant-badge-dot"),
     ).toHaveCount(0);
   }
+  hasApiKey = false;
+  await page.reload();
+  await expect(
+    page.getByRole("tab", { name: "设置", exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("heading", { name: "服务设置" })).toBeVisible();
+  await page.getByRole("tab", { name: "素材", exact: true }).click();
+  await expect(
+    page.getByRole("tab", { name: "素材", exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
   console.log(
     "前端浏览器回归通过：波浪、减少动态、主题、面板浮层、删除失败恢复、导航、窄列和旧后端。",
   );

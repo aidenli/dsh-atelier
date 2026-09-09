@@ -1,6 +1,6 @@
 /** 动作迁移项目视图：项目组织创作，任务负责远端执行；详情读取全部任务，不受任务页分页影响。 */
 import { Alert, Button, Empty, Pagination, Tag } from "antd";
-import { ArrowLeft, ArrowRight, Film } from "lucide-react";
+import { ArrowLeft, ArrowRight, Film, RefreshCw } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type {
   Bridge,
@@ -34,6 +34,7 @@ export function MotionProjects({
     tasks: Task[];
   }>();
   const [error, setError] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
   const state = useSyncExternalStore(
     bridge.workspace.subscribe,
     bridge.workspace.getSnapshot,
@@ -43,21 +44,19 @@ export function MotionProjects({
     bridge.workspace.update({ projectPage });
   useEffect(() => {
     let stopped = false;
-    let timer: ReturnType<typeof setTimeout>;
     setDetail(undefined);
     setError("");
     async function refresh() {
       try {
         if (id) {
-          const value = await bridge.request<{
+          const value = await bridge.get<{
             project: ProjectSummary;
             tasks: Task[];
-          }>("GET", `/projects/${encodeURIComponent(id)}`);
+          }>(`/getProject?id=${encodeURIComponent(id)}`);
           if (!stopped) setDetail(value);
         } else {
-          const value = await bridge.request<ProjectPage>(
-            "GET",
-            `/projects?type=motion-transfer&page=${page}`,
+          const value = await bridge.get<ProjectPage>(
+            `/listProjects?type=motion-transfer&page=${page}`,
           );
           if (!stopped) setProjects(value);
         }
@@ -65,14 +64,15 @@ export function MotionProjects({
       } catch (e) {
         if (!stopped) setError(message(e));
       }
-      if (!stopped) timer = setTimeout(refresh, 2000);
     }
+    const onEvents = () => void refresh();
+    window.addEventListener("atelier:events", onEvents);
     void refresh();
     return () => {
       stopped = true;
-      clearTimeout(timer);
+      window.removeEventListener("atelier:events", onEvents);
     };
-  }, [bridge, id, page]);
+  }, [bridge, id, page, refreshKey]);
   return (
     <>
       {error && <Alert type="error" showIcon title={error} />}
@@ -131,7 +131,15 @@ export function MotionProjects({
         <>
           <div className="atelier-section-head">
             <h2>动作迁移</h2>
-            <Tag>{projects.total} 个项目</Tag>
+            <div className="atelier-inline-actions">
+              <Tag>{projects.total} 个项目</Tag>
+              <Button
+                type="text"
+                aria-label="刷新项目"
+                icon={<RefreshCw size={16} />}
+                onClick={() => setRefreshKey((value) => value + 1)}
+              />
+            </div>
           </div>
           <div className="atelier-task-list">
             {projects.items.map((project) => (

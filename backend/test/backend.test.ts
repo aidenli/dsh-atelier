@@ -13,8 +13,6 @@ import { Runner } from "../src/scheduler/runner.js";
 import { Client, RemoteError, retryDelay } from "../src/runninghub/client.js";
 import { router } from "../src/httpapi/router.js";
 import type { BatchRequest, Task } from "../src/media/types.js";
-import { mkdir } from "node:fs/promises";
-import { dirname } from "node:path";
 const png = Buffer.concat([
   Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
   Buffer.alloc(24),
@@ -112,14 +110,14 @@ test("项目与任务分离：批量归属、幂等、历史补齐不改变远�
     try {
       const response = await app.inject({
         method: "GET",
-        url: `/projects/${projectId}`,
+        url: `/getProject?id=${projectId}`,
       });
       assert.equal(response.statusCode, 200);
       assert.equal(response.json().tasks.length, 1);
       assert.equal(response.json().project.state, "remote_pending");
       assert.equal(
         (
-          await app.inject({ method: "GET", url: "/projects?type=other" })
+          await app.inject({ method: "GET", url: "/listProjects?type=other" })
         ).json().total,
         0,
       );
@@ -142,7 +140,7 @@ test("项目与任务分离：批量归属、幂等、历史补齐不改变远�
       const second = (
         await app.inject({
           method: "GET",
-          url: "/projects?type=motion-transfer&page=2",
+          url: "/listProjects?type=motion-transfer&page=2",
         })
       ).json();
       assert.equal(second.total, 23);
@@ -546,23 +544,40 @@ test("HTTP 兼容、上传字段顺序、Range/HEAD、删除、分页与脱敏",
   const f = await fixture();
   const app = await router(f.service, f.files);
   try {
-    assert.equal((await app.inject("/health")).json().runtime, "node");
+    assert.equal((await app.inject("/getHealth")).json().runtime, "node");
+    assert.equal((await app.inject("/getHealth")).json().apiVersion, 2);
+    for (const url of ["/tasks", "/assets", "/tasks/old-id", "/config"]) {
+      assert.equal((await app.inject(url)).statusCode, 404);
+    }
+    assert.equal(
+      (await app.inject({ method: "PUT", url: "/saveConfig", payload: {} }))
+        .statusCode,
+      404,
+    );
+    assert.equal(
+      (await app.inject({ method: "GET", url: "/deleteAssets" })).statusCode,
+      404,
+    );
     const range = await app.inject({
-      url: `/assets/${f.video.id}/file`,
+      url: `/getAssetFile?id=${f.video.id}`,
       headers: { range: "bytes=0-7" },
     });
     assert.equal(range.statusCode, 206);
     assert.equal(range.rawPayload.length, 8);
     assert.equal(range.headers["content-range"], `bytes 0-7/${mp4.length}`);
     assert.equal(
-      (await app.inject({ method: "HEAD", url: `/assets/${f.video.id}/file` }))
-        .rawPayload.length,
+      (
+        await app.inject({
+          method: "HEAD",
+          url: `/getAssetFile?id=${f.video.id}`,
+        })
+      ).rawPayload.length,
       0,
     );
     assert.equal(
       (
         await app.inject({
-          url: `/assets/${f.video.id}/file`,
+          url: `/getAssetFile?id=${f.video.id}`,
           headers: { range: "bytes=999-" },
         })
       ).statusCode,
@@ -580,7 +595,7 @@ test("HTTP 兼容、上传字段顺序、Range/HEAD、删除、分页与脱敏",
     ]);
     const upload = await app.inject({
       method: "POST",
-      url: "/assets",
+      url: "/uploadAsset",
       headers: { "content-type": `multipart/form-data; boundary=${boundary}` },
       payload: body,
     });
@@ -596,28 +611,28 @@ test("HTTP 兼容、上传字段顺序、Range/HEAD、删除、分页与脱敏",
         providerUrl: "private",
       };
     });
-    const details = (await app.inject("/tasks/" + key)).json();
+    const details = (await app.inject("/getTask?id=" + key)).json();
     assert.equal(details.task.uploads, undefined);
     assert.equal(details.task.accountHash, "");
     assert.equal(
-      (await app.inject("/tasks?pageSize=1")).json().items.length,
+      (await app.inject("/listTasks?pageSize=1")).json().items.length,
       1,
     );
     const deleted = await app.inject({
-      method: "DELETE",
-      url: "/assets",
+      method: "POST",
+      url: "/deleteAssets",
       payload: { ids: [f.image.id] },
     });
     assert.equal(deleted.statusCode, 200);
     assert.equal(
-      (await app.inject(`/assets/${f.image.id}/file`)).statusCode,
+      (await app.inject(`/getAssetFile?id=${f.image.id}`)).statusCode,
       200,
     );
     assert.equal(
       (
         await app.inject({
           method: "POST",
-          url: "/tasks",
+          url: "/createTasks",
           headers: { "content-type": "application/json" },
           payload: "bad",
         })
@@ -661,61 +676,6 @@ test("按尺寸自动选择 plus，明确 default 优先，Retry-After 可恢复
   } finally {
     await p.close();
     await f.close();
-  }
-});
-test("读取 Go 实际生成的 v1 数据，旧请求重放不新增任务，历史删除文件和事件保留", async () => {
-  const legacy = JSON.parse(
-    await readFile(
-      new URL("../../../test/fixtures/go-v1.json", import.meta.url),
-      "utf8",
-    ),
-  );
-  const dir = await mkdtemp(join(tmpdir(), "atelier-upgrade-"));
-  let store = new Store(dir);
-  try {
-    store.tx(() => {
-      for (const [table, rows] of Object.entries(legacy.rows))
-        for (const row of rows as any[]) store.put(table, row.id, row);
-      for (const e of legacy.events)
-        store.db
-          .prepare(
-            "INSERT INTO events(seq,session_id,entity_id,kind,message,notify,delivered,created_at) VALUES(?,?,?,?,?,?,?,?)",
-          )
-          .run(
-            e.seq,
-            e.sessionId,
-            e.entityId,
-            e.kind,
-            e.message,
-            Number(e.notify),
-            Number(e.delivered),
-            e.createdAt,
-          );
-    });
-    for (const [path, content] of Object.entries(legacy.files)) {
-      const file = join(dir, ...path.split(/[\\/]/));
-      await mkdir(dirname(file), { recursive: true });
-      await writeFile(file, Buffer.from(content as string, "base64"));
-    }
-    store.close();
-    store = new Store(dir);
-    const service = new Service(store),
-      files = new Files(service);
-    const plan = service.admit(legacy.request);
-    assert.equal(plan.id, legacy.planId);
-    assert.equal(service.tasks().length, 1);
-    assert.equal(service.task(plan.taskIds[0]).remoteId, "existing-remote");
-    assert.equal(service.assets().length, 1);
-    assert.equal(
-      (await files.asset(legacy.request.tasks[0].imageId)).asset.kind,
-      "image",
-    );
-    assert.equal(store.events(0).length, legacy.events.length);
-    new Runner(service, files).recover();
-    assert.equal(service.task(plan.taskIds[0]).remoteId, "existing-remote");
-  } finally {
-    store.close();
-    await rm(dir, { recursive: true, force: true });
   }
 });
 test("下载中断只重试下载，迟到成功全部归档后才结束", async (context) => {

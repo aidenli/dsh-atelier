@@ -66,12 +66,12 @@ export function registerMediaTools(
             switch (operation) {
               case "capabilities": {
                 // 只返回配置状态，显式投影避免配置接口新增字段时将密钥带入模型上下文。
-                const config = (await backend.request("GET", "/config")) as {
+                const config = (await backend.get("/getConfig")) as {
                   hasApiKey?: boolean;
                 };
                 result = {
                   hasApiKey: config.hasApiKey === true,
-                  workflows: await backend.request("GET", "/workflows"),
+                  workflows: await backend.get("/listWorkflows"),
                   fps: 30,
                   autoStartWhenReady: true,
                   instructions:
@@ -82,47 +82,40 @@ export function registerMediaTools(
               case "asset_list":
                 await importSessionAttachments(ctx, backend, execution.agent);
                 // 素材库与页面一致，全局可读；下方任务操作仍使用执行者的会话范围。
-                result = await backend.request("GET", "/assets");
+                result = await backend.get("/listAssets");
                 break;
               case "asset_import":
-                result = await backend.request(
-                  "POST",
-                  "/assets/import",
+                result = await backend.post(
+                  "/importAsset",
                   { sessionId, path: input.path },
                   true,
                 );
                 break;
               case "task_create":
-                result = await backend.request("POST", "/tasks", {
+                result = await backend.post("/createTasks", {
                   sessionId,
                   requestId: input.requestId,
                   tasks: input.tasks,
                 });
                 break;
               case "task_list":
-                result = await backend.request(
-                  "GET",
-                  `/tasks?${scope}&page=${Number(input.page) || 1}&state=${encodeURIComponent(String(input.state || ""))}`,
+                result = await backend.get(
+                  `/listTasks?${scope}&page=${Number(input.page) || 1}&state=${encodeURIComponent(String(input.state || ""))}`,
                 );
                 break;
               case "task_get":
                 if (!id) throw new Error("任务 ID 无效");
-                result = await backend.request("GET", `/tasks/${id}?${scope}`);
+                result = await backend.get(`/getTask?id=${id}&${scope}`);
                 break;
               case "task_cancel":
                 if (!id) throw new Error("任务 ID 无效");
-                result = await backend.request(
-                  "POST",
-                  `/tasks/${id}/cancel?${scope}`,
-                );
+                result = await backend.post(`/cancelTask?id=${id}&${scope}`);
                 break;
               case "task_retry":
                 if (!id) throw new Error("任务 ID 无效");
-                result = await backend.request(
-                  "POST",
-                  `/tasks/${id}/retry?${scope}`,
-                  { revision: input.revision },
-                );
+                result = await backend.post(`/retryTask?id=${id}&${scope}`, {
+                  revision: input.revision,
+                });
                 break;
               default:
                 throw new Error("未知操作");

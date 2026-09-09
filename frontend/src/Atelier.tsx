@@ -42,6 +42,31 @@ export function Atelier({
   useAtelierWidth(workspace);
   const model = useWorkspaceData(bridge);
   useEffect(() => {
+    let active = true;
+    const initial = bridge.workspace.getSnapshot();
+    // 仅打开时引导配置；请求返回前用户若已导航，则不抢占页面。
+    // 必须明确未配置才跳转，连接失败不能当成缺少密钥。
+    void bridge.get<{ hasApiKey: boolean }>("/getConfig").then(
+      (config) => {
+        if (
+          active &&
+          config.hasApiKey === false &&
+          bridge.workspace.getSnapshot() === initial
+        )
+          bridge.workspace.update({
+            view: "settings",
+            task: undefined,
+            project: undefined,
+            workflow: undefined,
+          });
+      },
+      () => {}, // 连接故障由现有业务轮询展示，避免重复错误提示。
+    );
+    return () => {
+      active = false;
+    };
+  }, [bridge]);
+  useEffect(() => {
     const sync = () =>
       workspace.current?.classList.toggle("atelier-paused", document.hidden);
     sync();
@@ -132,13 +157,13 @@ export function Atelier({
             busy={model.busy}
             save={(w) =>
               void model.act(async () => {
-                await bridge.request("PUT", `/workflows/${w.id}`, w);
+                await bridge.post(`/saveWorkflow?id=${w.id}`, w);
                 setWorkflow(undefined);
               })
             }
             remove={() =>
               void model.act(async () => {
-                await bridge.request("DELETE", `/workflows/${workflow.id}`);
+                await bridge.post(`/deleteWorkflow?id=${workflow.id}`);
                 setWorkflow(undefined);
               })
             }

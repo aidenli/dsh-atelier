@@ -15,6 +15,8 @@
     sans-serif;
   letter-spacing: 0;
   min-width: 0;
+  /* 直接绘制在插件根节点，避免被 DSH 右栏容器背景吞掉。 */
+  box-shadow: inset 2px 0 0 var(--dsw-alias-border-l2, #aeb4bf);
 }
 .atelier * {
   box-sizing: border-box;
@@ -36,6 +38,16 @@
 .atelier h3 {
   font-size: 14px;
   margin: 24px 0 12px;
+}
+/* 配置表单按可用宽度自动折行；JSON 保留缩进并限制纵向占用。 */
+.atelier-task-config {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  column-gap: 16px;
+}
+.atelier .atelier-node-json {
+  font-family: Consolas, monospace;
+  font-size: 12px;
 }
 /* 返回入口使用主题色轮廓与浅底，独立留出间距，避免与详情标题混淆。 */
 .atelier .atelier-back {
@@ -174,9 +186,9 @@
 /* 侧栏独立尺寸与原生设置入口对齐，不放大聊天标题栏按钮。 */
 .atelier-entry-sidebar {
   box-sizing: border-box;
-  width: 100%;
+  width: auto;
   height: 42px;
-  flex: 1;
+  flex: 0 1 auto;
   justify-content: flex-start;
   padding: 0 10px 0 8px;
   font: inherit;
@@ -217,6 +229,20 @@
 [data-atelier-layout] > [data-side="rightbar"] {
   display: none;
 }
+/* 使用 DSH 的 L2 边框变量，形成聊天区与插件区之间稳定且可见的分界。 */
+[data-atelier-layout] > [data-side="rightbar"]::before,
+.atelier-resize::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  width: 1px;
+  background: var(--dsw-alias-border-l2, var(--atelier-line));
+}
+.atelier-resize::before {
+  left: 2px;
+  width: 2px;
+  opacity: 0.9;
+}
 .atelier-project-media {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
@@ -241,7 +267,7 @@
 }
 @media (min-width: 961px) {
   [data-atelier-layout] {
-    grid-template-columns: var(--atelier-sidebar-width) minmax(480px, 1fr) var(
+    grid-template-columns: var(--atelier-sidebar-width) minmax(520px, 1fr) var(
         --atelier-panel-width
       ) !important;
   }

@@ -6,29 +6,56 @@
         "properties": {
           "items": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/Project" }
+            "items": {
+              "$ref": "#/components/schemas/Project"
+            }
           },
-          "page": { "type": "integer" },
-          "total": { "type": "integer" }
+          "page": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          }
         },
         "required": ["items", "page", "total"]
       },
       "Project": {
         "type": "object",
         "properties": {
-          "id": { "type": "string" },
-          "type": { "type": "string" },
-          "title": { "type": "string" },
-          "sessionId": { "type": "string" },
-          "taskIds": { "type": "array", "items": { "type": "string" } },
-          "createdAt": { "type": "string" },
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "sessionId": {
+            "type": "string"
+          },
+          "taskIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createdAt": {
+            "type": "string"
+          },
           "state": {
             "type": "string",
             "description": "响应时从任务聚合，不持久化"
           },
-          "completed": { "type": "integer" },
-          "totalTasks": { "type": "integer" },
-          "imageId": { "type": "string" }
+          "completed": {
+            "type": "integer"
+          },
+          "totalTasks": {
+            "type": "integer"
+          },
+          "imageId": {
+            "type": "string"
+          }
         },
         "required": ["id", "type", "title", "sessionId", "taskIds", "createdAt"]
       },
@@ -296,6 +323,16 @@
       },
       "Task": {
         "properties": {
+          "platform": {
+            "type": "string",
+            "description": "执行平台；旧任务默认为 runninghub"
+          },
+          "outputs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Asset"
+            }
+          },
           "attempt": {
             "type": "integer"
           },
@@ -337,7 +374,9 @@
           "planId": {
             "type": "string"
           },
-          "projectId": { "type": "string" },
+          "projectId": {
+            "type": "string"
+          },
           "providerUrl": {
             "type": "string"
           },
@@ -474,14 +513,23 @@
   },
   "openapi": "3.0.3",
   "paths": {
-    "/projects": {
+    "/listProjects": {
       "get": {
         "parameters": [
-          { "name": "type", "in": "query", "schema": { "type": "string" } },
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "page",
             "in": "query",
-            "schema": { "type": "integer", "minimum": 1 }
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
           }
         ],
         "responses": {
@@ -498,21 +546,27 @@
         }
       }
     },
-    "/projects/{id}": {
+    "/getProject": {
       "get": {
         "parameters": [
           {
             "name": "id",
-            "in": "path",
+            "in": "query",
             "required": true,
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
-        "responses": { "200": { "description": "项目与全部公开任务快照" } }
+        "responses": {
+          "200": {
+            "description": "项目与全部公开任务快照"
+          }
+        }
       }
     },
-    "/assets": {
-      "delete": {
+    "/deleteAssets": {
+      "post": {
         "requestBody": {
           "content": {
             "application/json": {
@@ -532,7 +586,9 @@
           }
         },
         "summary": "批量逻辑删除素材，保留历史引用文件"
-      },
+      }
+    },
+    "/listAssets": {
       "get": {
         "responses": {
           "200": {
@@ -553,7 +609,9 @@
           }
         },
         "summary": "素材列表"
-      },
+      }
+    },
+    "/uploadAsset": {
       "post": {
         "responses": {
           "200": {
@@ -573,7 +631,7 @@
         "summary": "multipart 素材上传"
       }
     },
-    "/assets/import": {
+    "/importAsset": {
       "post": {
         "responses": {
           "200": {
@@ -593,11 +651,11 @@
         "summary": "Host 专用路径导入"
       }
     },
-    "/assets/{id}/file": {
+    "/getAssetFile": {
       "get": {
         "parameters": [
           {
-            "in": "path",
+            "in": "query",
             "name": "id",
             "required": true,
             "schema": {
@@ -618,7 +676,7 @@
       "head": {
         "parameters": [
           {
-            "in": "path",
+            "in": "query",
             "name": "id",
             "required": true,
             "schema": {
@@ -637,11 +695,11 @@
         "summary": "读取文件头"
       }
     },
-    "/assets/{id}/selection": {
+    "/getAssetSelection": {
       "get": {
         "parameters": [
           {
-            "in": "path",
+            "in": "query",
             "name": "id",
             "required": true,
             "schema": {
@@ -660,7 +718,7 @@
         "summary": "选择素材受管路径"
       }
     },
-    "/config": {
+    "/getConfig": {
       "get": {
         "responses": {
           "200": {
@@ -671,8 +729,10 @@
           }
         },
         "summary": "脱敏账户配置"
-      },
-      "put": {
+      }
+    },
+    "/saveConfig": {
+      "post": {
         "requestBody": {
           "content": {
             "application/json": {
@@ -694,7 +754,7 @@
         "summary": "保存账户配置"
       }
     },
-    "/events": {
+    "/listEvents": {
       "get": {
         "responses": {
           "200": {
@@ -717,11 +777,11 @@
         "summary": "事件游标或待投递通知"
       }
     },
-    "/events/{seq}/ack": {
+    "/ackEvent": {
       "post": {
         "parameters": [
           {
-            "in": "path",
+            "in": "query",
             "name": "seq",
             "required": true,
             "schema": {
@@ -740,7 +800,7 @@
         "summary": "确认通知持久化"
       }
     },
-    "/health": {
+    "/getHealth": {
       "get": {
         "responses": {
           "200": {
@@ -760,7 +820,7 @@
         "summary": "连接检查及后端能力"
       }
     },
-    "/tasks": {
+    "/listTasks": {
       "get": {
         "responses": {
           "200": {
@@ -771,7 +831,9 @@
           }
         },
         "summary": "分页筛选任务与汇总"
-      },
+      }
+    },
+    "/createTasks": {
       "post": {
         "requestBody": {
           "content": {
@@ -801,11 +863,11 @@
         "summary": "幂等创建批次"
       }
     },
-    "/tasks/{id}": {
+    "/getTask": {
       "get": {
         "parameters": [
           {
-            "in": "path",
+            "in": "query",
             "name": "id",
             "required": true,
             "schema": {
@@ -824,11 +886,11 @@
         "summary": "任务与尝试详情"
       }
     },
-    "/tasks/{id}/cancel": {
+    "/cancelTask": {
       "post": {
         "parameters": [
           {
-            "in": "path",
+            "in": "query",
             "name": "id",
             "required": true,
             "schema": {
@@ -847,11 +909,11 @@
         "summary": "取消任务"
       }
     },
-    "/tasks/{id}/reconcile": {
+    "/reconcileTask": {
       "post": {
         "parameters": [
           {
-            "in": "path",
+            "in": "query",
             "name": "id",
             "required": true,
             "schema": {
@@ -870,11 +932,11 @@
         "summary": "关联已核对远端 ID"
       }
     },
-    "/tasks/{id}/retry": {
+    "/retryTask": {
       "post": {
         "parameters": [
           {
-            "in": "path",
+            "in": "query",
             "name": "id",
             "required": true,
             "schema": {
@@ -893,7 +955,7 @@
         "summary": "人工重试当前 revision"
       }
     },
-    "/workflows": {
+    "/listWorkflows": {
       "get": {
         "responses": {
           "200": {
@@ -916,11 +978,11 @@
         "summary": "工作流列表"
       }
     },
-    "/workflows/{id}": {
-      "delete": {
+    "/deleteWorkflow": {
+      "post": {
         "parameters": [
           {
-            "in": "path",
+            "in": "query",
             "name": "id",
             "required": true,
             "schema": {
@@ -937,11 +999,13 @@
           }
         },
         "summary": "删除工作流定义"
-      },
-      "put": {
+      }
+    },
+    "/saveWorkflow": {
+      "post": {
         "parameters": [
           {
-            "in": "path",
+            "in": "query",
             "name": "id",
             "required": true,
             "schema": {

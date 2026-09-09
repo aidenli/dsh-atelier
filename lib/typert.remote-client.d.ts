@@ -6,10 +6,10 @@ import type {
 
 declare module '@deepseek-ai/dsh-typert-protocol' {
   interface TypertRemoteNamespace$6174656c696572 {
-    request: (command: string) => Promise<RemoteResult<string>>
+    getVersion: () => Promise<RemoteResult<string>>
   }
   interface TypertRemoteMap {
-    'atelier/request': (command: string) => Promise<RemoteResult<string>>
+    'atelier/getVersion': () => Promise<RemoteResult<string>>
   }
   interface TypertRemoteNamespaceMap {
     'atelier': TypertRemoteNamespace$6174656c696572

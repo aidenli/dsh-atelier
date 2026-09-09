@@ -143,7 +143,7 @@ for (let i = 0; i < 120; i++) {
       )?.[1];
       if (listen) {
         try {
-          const response = await fetch(`http://${listen}/health`, {
+          const response = await fetch(`http://${listen}/getHealth`, {
             signal: AbortSignal.timeout(2000),
           });
           const health = await response.json();

@@ -51,7 +51,13 @@ export class Store {
       throw error;
     }
   }
-  /** 写事务要么完整提交，要么回滚；返回 Promise 属于调用错误，禁止提前提交。 */
+  /**
+   * 执行一个纯同步 SQLite 事务。
+   *
+   * DatabaseSync 不允许在事务中等待网络或文件 I/O；因此调用方必须先完成
+   * 外部操作，再用这里的短事务保存结果。回调返回 Promise 或抛错都会回滚，
+   * 防止只写入任务而漏写尝试记录、项目归属或事件。
+   */
   tx<T>(fn: () => T): T {
     if (fn.constructor.name === "AsyncFunction")
       throw new Error("事务中禁止异步操作");

@@ -7,8 +7,7 @@ import {
   symlink,
   copyFile,
   cp,
-  lstat,
-  unlink,
+  rm,
 } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { resolve, dirname, join } from "node:path";
@@ -77,23 +76,22 @@ async function scan(dir, depth = 0) {
 await scan(resolve(dsh, "packages"));
 await scan(resolve(dsh, "vendor"));
 
-/** 本机链接保持 Cordis 单一实例，禁止将另一份 Cordis 打包进插件。 */
+/**
+ * 强制把构建依赖重建为当前 DSH 源码链接。
+ *
+ * plugin/node_modules 可能残留 pnpm 自动安装的 peer 依赖；这些包与 DSH
+ * 源码中的品牌类型不兼容。每次构建删除明确的依赖路径再创建目录链接，
+ * 保证 Cordis、Agent、Session 和 LLM 类型都来自同一个 DSH 工作区。
+ */
 async function link(target, path) {
   await mkdir(dirname(path), { recursive: true });
   if (!existsSync(target)) throw new Error(`依赖不存在：${target}`);
-  if (!existsSync(path)) {
-    try {
-      const stat = await lstat(path);
-      if (stat.isSymbolicLink()) await unlink(path);
-    } catch (error) {
-      if (error.code !== "ENOENT") throw error;
-    }
-    await symlink(
-      target,
-      path,
-      process.platform === "win32" ? "junction" : "dir",
-    );
-  }
+  await rm(path, { recursive: true, force: true });
+  await symlink(
+    target,
+    path,
+    process.platform === "win32" ? "junction" : "dir",
+  );
 }
 for (const [name, dir] of packages) {
   await link(dir, resolve(plugin, "node_modules", name));

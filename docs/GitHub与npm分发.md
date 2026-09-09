@@ -1,5 +1,23 @@
 # GitHub 与 npm 分发
 
+## 一键分发
+
+先更新 `plugin/package.json` 版本号，创建 `docs/发布说明-版本.md`，完成 `gh auth login`、`npm login` 和 Git 作者配置。在项目根目录执行（Windows/macOS 共用）：
+
+```sh
+node scripts/publish.mjs --channel all
+```
+
+依次完成：凭据模式扫描、前后端构建与测试、打包验收、main 源码及预构建入口同步、GitHub 在线安装验证、npm 发布与安装验证、正式 GitHub Release 及 TGZ/SHA256 上传。不会重启正在使用的 DSH。npm 要求浏览器验证时按终端提示完成。
+
+若部分步骤失败，保留原包，修复登录或网络后继续：
+
+```sh
+node scripts/publish.mjs --channel all --archive dist/dsh-atelier-0.3.2-universal.tgz
+```
+
+该方式重新验收原包，跳过已存在且内容一致的发布步骤；遇到不同内容的同版本或不完整 Release 则停止，禁止覆盖。main 已含同版本时不再同步本地后续源码修改，修改须增加版本。普通 `node scripts/publish.mjs` 仍只打包，不发布。
+
 main 保存完整源码及根目录的预构建安装入口。通过 main 安装不执行编译；源码开发继续使用 plugin 目录。dist 为历史渠道。
 
 ## 准备

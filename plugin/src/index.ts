@@ -6,6 +6,8 @@ import { Backend, type PluginConfig } from "./backend.ts";
 import { AtelierRemote } from "./remote.ts";
 import { installNotifications } from "./notifications.ts";
 import { installTransferSkill } from "./skill.ts";
+import { readOperations, writeOperations } from "../../contracts/routes.ts";
+import { versionInfo } from "./version.ts";
 export { AtelierRemote } from "./remote.ts";
 export type { PluginConfig } from "./backend.ts";
 export { Backend } from "./backend.ts";
@@ -31,14 +33,58 @@ export async function apply(ctx: Context, config: PluginConfig): Promise<void> {
   const backend = new Backend(config);
   ctx.effect(() => () => backend.stop(), "atelier: 后端进程生命周期");
   await backend.initialize();
-  new AtelierRemote(ctx, backend);
+  new AtelierRemote(ctx);
+  // 每项操作有独立 URL 和固定 HTTP 方法，Network 面板直接显示业务名称。
+  for (const [method, operations] of [
+    ["GET", [...readOperations, "getConnection", "getVersion"]],
+    ["POST", [...writeOperations, "saveConnection"]],
+  ] as const) {
+    for (const operation of operations)
+      ctx.effect(
+        () =>
+          ctx.connection.fetch.register({
+            path: `/api/atelier.${operation}`,
+            methods: [method],
+            requestBody: "buffered",
+            async fetch(request: Request): Promise<Response> {
+              try {
+                const path = `/${operation}${new URL(request.url).search}`;
+                let result: unknown;
+                if (operation === "getVersion") result = await versionInfo();
+                else if (operation === "getConnection")
+                  result = await backend.connection();
+                else if (operation === "saveConnection")
+                  result = await backend.connection(await request.json());
+                else
+                  result =
+                    method === "GET"
+                      ? await backend.get(path)
+                      : await backend.post(path, await request.json());
+                return Response.json(result, {
+                  headers: { "Cache-Control": "no-store" },
+                });
+              } catch (error) {
+                return Response.json(
+                  {
+                    error: error instanceof Error ? error.message : "操作失败",
+                  },
+                  { status: 400 },
+                );
+              }
+            },
+          }),
+        `atelier: ${method} ${operation}`,
+      );
+  }
   installNotifications(ctx, backend);
   // DSH streaming 模式会无条件构造请求体，因此上传与 GET/HEAD 必须使用不同路径。
   for (const upload of [false, true])
     ctx.effect(
       () =>
         ctx.connection.fetch.register({
-          path: upload ? "/api/atelier.upload" : "/api/atelier.file",
+          path: upload
+            ? "/api/atelier.uploadAsset"
+            : "/api/atelier.getAssetFile",
           methods: upload ? ["POST"] : ["GET", "HEAD"],
           requestBody: upload ? "streaming" : "buffered",
           async fetch(request: Request): Promise<Response> {
@@ -56,8 +102,8 @@ export async function apply(ctx: Context, config: PluginConfig): Promise<void> {
               return new Response("素材 ID 无效", { status: 400 });
             const path =
               request.method === "POST"
-                ? "/assets"
-                : `/assets/${id}/file${url.searchParams.get("download") === "1" ? "?download=1" : ""}`;
+                ? "/uploadAsset"
+                : `/getAssetFile?id=${id}${url.searchParams.get("download") === "1" ? "&download=1" : ""}`;
             try {
               const init: RequestInit & { duplex?: "half" } = {
                 method: request.method,

@@ -92,7 +92,7 @@ try {
                 if ($probe) {
                     try {
                         if ($current.process.command -match '--listen\s+(127\.0\.0\.1:\d+)') {
-                            $health = Invoke-RestMethod -Uri "http://$($Matches[1])/health" -TimeoutSec 3
+                            $health = Invoke-RestMethod -Uri "http://$($Matches[1])/getHealth" -TimeoutSec 3
                             if ($health.runtime -eq 'node' -and $health.status -eq 'ok') {
                                 Write-Host "DSH 与 Node 后端已就绪：$url"
                                 Write-Host "日志：$stdout`n错误日志：$stderr"

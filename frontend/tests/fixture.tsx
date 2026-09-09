@@ -27,9 +27,10 @@ const bridge: Bridge = {
   openSession: async (id) => {
     navigateSession(id);
   },
-  request: (method, path, body) =>
+  get: (path) => fetch(`/mock${path}`).then(readJSON) as never,
+  post: (path, body) =>
     fetch(`/mock${path}`, {
-      method,
+      method: "POST",
       headers: { "Content-Type": "application/json" },
       body: body === undefined ? undefined : JSON.stringify(body),
     }).then(readJSON) as never,

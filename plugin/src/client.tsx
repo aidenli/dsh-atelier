@@ -90,21 +90,28 @@ function mount(ctx: Context): void {
         throw new Error("来源会话不可用，可能已删除或不在当前工作区列表中");
       }
     },
-    async request<T>(method: string, path: string, body?: unknown): Promise<T> {
-      const result = await ctx.remote.atelier.request(
-        JSON.stringify({ method, path, body }),
-      );
-      if (!result.ok) throw new Error(result.error.message);
-      return JSON.parse(result.value) as T;
+    async get<T>(path: string): Promise<T> {
+      return (await readJSON(
+        await fetch(`/api/atelier.${path.slice(1)}`),
+      )) as T;
+    },
+    async post<T>(path: string, body?: unknown): Promise<T> {
+      return (await readJSON(
+        await fetch(`/api/atelier.${path.slice(1)}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body ?? {}),
+        }),
+      )) as T;
     },
     fileUrl(id, download = false) {
-      return `/api/atelier.file?id=${encodeURIComponent(id)}${download ? "&download=1" : ""}`;
+      return `/api/atelier.getAssetFile?id=${encodeURIComponent(id)}${download ? "&download=1" : ""}`;
     },
     async upload(sessionId, file) {
       const body = new FormData();
       body.set("sessionId", sessionId);
       body.set("file", file);
-      const response = await fetch("/api/atelier.upload", {
+      const response = await fetch("/api/atelier.uploadAsset", {
         method: "POST",
         body,
       });
@@ -144,7 +151,9 @@ function mount(ctx: Context): void {
       }
     },
     connection(settings?: ConnectionSettings) {
-      return bridge.request(settings ? "PUT" : "GET", "/connection", settings);
+      return settings
+        ? bridge.post("/saveConnection", settings)
+        : bridge.get("/getConnection");
     },
   };
 
@@ -199,13 +208,6 @@ function mount(ctx: Context): void {
     ctx.slots.register(
       { name: "conversation.session.header.actions", id: "atelier", order: 30 },
       () => createElement(Entry, {}),
-    ),
-  );
-  ctx.slots.inject("sidebar.footer.action", () =>
-    ctx.slots.register(
-      { name: "sidebar.footer.action", id: "atelier", order: 30 },
-      ({ wide }: PropsRuntime<"sidebar.footer.action">) =>
-        createElement(Entry, { wide, sidebar: true }),
     ),
   );
 
@@ -272,7 +274,7 @@ function mount(ctx: Context): void {
         },
       },
       createElement(Film, { size: 17 }),
-      wide && "Atelier",
+      (!sidebar || wide) && "Atelier",
     );
   }
 }

@@ -27,8 +27,8 @@ export function ServiceSettings({
     let alive = true;
     void Promise.all([
       bridge.connection(),
-      bridge.request<{ hasApiKey: boolean }>("GET", "/config"),
-      bridge.request<Health>("GET", "/health"),
+      bridge.get<{ hasApiKey: boolean }>("/getConfig"),
+      bridge.get<Health>("/getHealth"),
     ]).then(
       ([c, k, h]) => {
         if (alive) {
@@ -50,16 +50,13 @@ export function ServiceSettings({
     setStatus("");
     try {
       await bridge.connection(connection);
-      const health = await bridge.request<Health>("GET", "/health");
+      const health = await bridge.get<Health>("/getHealth");
       setCompatible(health.capabilities?.includes("asset-delete") === true);
-      await bridge.request("PUT", "/config", {
+      await bridge.post("/saveConfig", {
         baseUrl: "https://www.runninghub.cn",
         apiKey: key,
       });
-      const config = await bridge.request<{ hasApiKey: boolean }>(
-        "GET",
-        "/config",
-      );
+      const config = await bridge.get<{ hasApiKey: boolean }>("/getConfig");
       setHasKey(config.hasApiKey);
       setKey("");
       setStatus("连接正常，配置已保存");

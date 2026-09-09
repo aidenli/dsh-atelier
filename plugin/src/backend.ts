@@ -9,6 +9,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { readJSON } from "../../contracts/http.ts";
 import { reapManagedProcess, recordManagedProcess } from "./managed-process.ts";
 import { createConnection } from "node:net";
+import { readOperations, writeOperations } from "../../contracts/routes.ts";
 
 /** PluginConfig 只对页面公开 URL 和模式；运行目录和二进制位置来自本地部署。 */
 export interface PluginConfig {
@@ -109,29 +110,32 @@ export class Backend {
       throw new Error("无法连接 Atelier 后端，请检查服务 URL 和运行状态");
     }
   }
-  /** request 仅处理受限 JSON API，禁止浏览器通过 Remote 调用 Host 专用路径导入。 */
-  async request(
-    method: string,
-    path: string,
-    body?: unknown,
-    trusted = false,
-  ): Promise<unknown> {
+  /** 读取操作只发送 GET，业务参数位于查询字符串。 */
+  async get(path: string): Promise<unknown> {
+    this.checkOperation(path, readOperations);
+    return readJSON(await this.fetch(path));
+  }
+  /** 写入操作只发送 POST；本地文件导入只允许 Host 内可信调用。 */
+  async post(path: string, body?: unknown, trusted = false): Promise<unknown> {
+    this.checkOperation(
+      path,
+      trusted ? [...writeOperations, "importAsset"] : writeOperations,
+    );
+    return readJSON(
+      await this.fetch(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body ?? {}),
+      }),
+    );
+  }
+  private checkOperation(path: string, allowed: readonly string[]): void {
     if (
-      !["GET", "POST", "PUT", "DELETE"].includes(method) ||
-      !/^\/(health|config|workflows|projects|tasks|assets|events)(?:[/?]|$)/.test(
-        path,
-      ) ||
+      !allowed.some((name) => path.split("?")[0] === `/${name}`) ||
       path.includes("..") ||
-      path.includes("\\") ||
-      (!trusted && path.split("?")[0] === "/assets/import")
+      path.includes("\\")
     )
       throw new Error("不允许的 Atelier 操作");
-    const response = await this.fetch(path, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
-    return readJSON(response);
   }
   private async start(): Promise<void> {
     if (this.settings.mode !== "managed") return;
@@ -151,6 +155,9 @@ export class Backend {
       throw new Error("Atelier 托管后端仅支持 Windows x64 和 macOS ARM64/x64");
     if (!existsSync(entry))
       throw new Error("未找到 Node 后端，请先运行构建脚本");
+    // 先核验并清理本插件上次留下的孤立进程，再检查端口。
+    // 顺序不能交换：仅检查端口无法证明占用者属于当前数据目录，
+    // 直接按端口终止会误伤外部模式或其他 DSH 实例。
     await reapManagedProcess(this.dataDir, binary, entry);
     const url = new URL(this.settings.backendUrl);
     // 旧版本没有身份记录时不能证明归属，必须报告冲突，不能按端口终止。
@@ -212,7 +219,7 @@ export class Backend {
         if (this.child !== child || child.exitCode !== null)
           throw new Error("Atelier 后端启动失败，请检查端口占用和数据目录权限");
         try {
-          const response = await this.fetch("/health", {
+          const response = await this.fetch("/getHealth", {
             signal: AbortSignal.timeout(1000),
           });
           if (response.ok) return;
