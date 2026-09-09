@@ -2,6 +2,7 @@
 import type { Context } from "@deepseek-ai/cordis";
 import { Remote, TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
 import type { Backend } from "./backend.ts";
+import { versionInfo } from "./version.ts";
 
 declare module "@deepseek-ai/cordis" {
   interface Context {
@@ -38,6 +39,8 @@ export class AtelierRemote extends TypertRemoteService {
             : undefined,
         ),
       );
+    if (value.path === "/version" && value.method === "GET")
+      return JSON.stringify(await versionInfo());
     return JSON.stringify(
       await this.backend.request(value.method, value.path, value.body),
     );

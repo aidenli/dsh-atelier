@@ -3,7 +3,14 @@ import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 import type { Event } from "../media/types.js";
-const tables = new Set(["workflows", "assets", "plans", "tasks", "attempts"]);
+const tables = new Set([
+  "workflows",
+  "assets",
+  "plans",
+  "tasks",
+  "attempts",
+  "projects",
+]);
 function table(name: string) {
   if (!tables.has(name)) throw new Error("非法实体表");
   return name;
@@ -23,7 +30,7 @@ export class Store {
       this.db = opened = new DatabaseSync(resolve(this.dir, "media.sqlite"));
       const version = this.db.prepare("PRAGMA user_version").get()!
         .user_version as number;
-      if (version > 1) throw new Error(`不支持数据库版本 ${version}`);
+      if (version > 3) throw new Error(`不支持数据库版本 ${version}`);
       this.db
         .exec(`PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000; PRAGMA foreign_keys=ON;
         CREATE TABLE IF NOT EXISTS workflows(id TEXT PRIMARY KEY,body TEXT NOT NULL);
@@ -31,11 +38,13 @@ export class Store {
         CREATE TABLE IF NOT EXISTS plans(id TEXT PRIMARY KEY,body TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS tasks(id TEXT PRIMARY KEY,body TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS attempts(id TEXT PRIMARY KEY,body TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS projects(id TEXT PRIMARY KEY,body TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS secrets(id TEXT PRIMARY KEY,body TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS events(seq INTEGER PRIMARY KEY AUTOINCREMENT,session_id TEXT NOT NULL,entity_id TEXT NOT NULL,kind TEXT NOT NULL,message TEXT NOT NULL,notify INTEGER NOT NULL,delivered INTEGER NOT NULL DEFAULT 0,created_at TEXT NOT NULL);
         CREATE INDEX IF NOT EXISTS event_notifications ON events(notify,delivered,seq);
         CREATE INDEX IF NOT EXISTS task_state ON tasks(json_extract(body,'$.state'));
         CREATE INDEX IF NOT EXISTS task_session ON tasks(json_extract(body,'$.sessionId'));
-        PRAGMA user_version=1;`);
+        `);
     } catch (error) {
       opened?.close();
       this.lock.close();

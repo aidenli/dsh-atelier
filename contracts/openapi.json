@@ -1,6 +1,37 @@
 {
   "components": {
     "schemas": {
+      "ProjectPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Project" }
+          },
+          "page": { "type": "integer" },
+          "total": { "type": "integer" }
+        },
+        "required": ["items", "page", "total"]
+      },
+      "Project": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "type": { "type": "string" },
+          "title": { "type": "string" },
+          "sessionId": { "type": "string" },
+          "taskIds": { "type": "array", "items": { "type": "string" } },
+          "createdAt": { "type": "string" },
+          "state": {
+            "type": "string",
+            "description": "响应时从任务聚合，不持久化"
+          },
+          "completed": { "type": "integer" },
+          "totalTasks": { "type": "integer" },
+          "imageId": { "type": "string" }
+        },
+        "required": ["id", "type", "title", "sessionId", "taskIds", "createdAt"]
+      },
       "Asset": {
         "properties": {
           "createdAt": {
@@ -101,11 +132,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "requestId",
-          "sessionId",
-          "tasks"
-        ],
+        "required": ["requestId", "sessionId", "tasks"],
         "type": "object"
       },
       "Config": {
@@ -117,9 +144,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "baseUrl"
-        ],
+        "required": ["baseUrl"],
         "type": "object"
       },
       "DeleteAssetsRequest": {
@@ -137,9 +162,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "ids"
-        ],
+        "required": ["ids"],
         "type": "object"
       },
       "Event": {
@@ -200,12 +223,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "status",
-          "version",
-          "apiVersion",
-          "capabilities"
-        ],
+        "required": ["status", "version", "apiVersion", "capabilities"],
         "type": "object"
       },
       "Mapping": {
@@ -217,10 +235,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "nodeId",
-          "fieldName"
-        ],
+        "required": ["nodeId", "fieldName"],
         "type": "object"
       },
       "Parameters": {
@@ -241,12 +256,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "width",
-          "height",
-          "frames",
-          "skip"
-        ],
+        "required": ["width", "height", "frames", "skip"],
         "type": "object"
       },
       "Plan": {
@@ -327,6 +337,7 @@
           "planId": {
             "type": "string"
           },
+          "projectId": { "type": "string" },
           "providerUrl": {
             "type": "string"
           },
@@ -403,12 +414,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "title",
-          "workflowId",
-          "imageId",
-          "videoId"
-        ],
+        "required": ["title", "workflowId", "imageId", "videoId"],
         "type": "object"
       },
       "Workflow": {
@@ -468,6 +474,43 @@
   },
   "openapi": "3.0.3",
   "paths": {
+    "/projects": {
+      "get": {
+        "parameters": [
+          { "name": "type", "in": "query", "schema": { "type": "string" } },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "type": "integer", "minimum": 1 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "全局项目列表，按创建时间倒序",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectPage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{id}": {
+      "get": {
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": { "200": { "description": "项目与全部公开任务快照" } }
+      }
+    },
     "/assets": {
       "delete": {
         "requestBody": {

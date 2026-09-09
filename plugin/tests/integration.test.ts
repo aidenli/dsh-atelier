@@ -1,6 +1,16 @@
 /** 插件连接与通知生命周期测试，使用临时目录和模拟服务，不访问真实账户。 */
 import { test } from "node:test";
+import { newerVersion } from "../src/version.ts";
 import assert from "node:assert/strict";
+
+test("更新提示只接受更高的稳定版本，按数字而非文本比较", () => {
+  assert.equal(newerVersion("0.3.2", "0.3.1"), true);
+  assert.equal(newerVersion("0.10.0", "0.9.9"), true);
+  assert.equal(newerVersion("0.3.1", "0.3.1"), false);
+  assert.equal(newerVersion("0.3.0", "0.3.1"), false);
+  assert.equal(newerVersion("0.4.0-beta", "0.3.1"), false);
+  assert.equal(newerVersion("0.4.0", "unknown"), false);
+});
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { once } from "node:events";

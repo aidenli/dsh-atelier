@@ -3,7 +3,7 @@ import { createRequire } from "node:module";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const require = createRequire(resolve(root, "frontend/package.json"));
 await require("esbuild").build({
   entryPoints: [resolve(root, "plugin/tests/integration.test.ts")],

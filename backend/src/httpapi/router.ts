@@ -77,6 +77,32 @@ export async function router(
     return { saved: true };
   });
   app.get("/workflows", () => service.workflows());
+  app.get<{ Querystring: { type?: string; page?: string } }>(
+    "/projects",
+    (r) => {
+      const items = service
+        .projects()
+        .filter((p) => !r.query.type || p.type === r.query.type);
+      const page = Math.min(
+        number(r.query.page, 1, 1000000),
+        Math.max(1, Math.ceil(items.length / 20)),
+      );
+      return {
+        items: items
+          .slice((page - 1) * 20, page * 20)
+          .map((p) => service.projectSummary(p)),
+        page,
+        total: items.length,
+      };
+    },
+  );
+  app.get<{ Params: { id: string } }>("/projects/:id", (r) => {
+    const project = service.project(r.params.id);
+    return {
+      project: service.projectSummary(project),
+      tasks: project.taskIds.map((id) => publicTask(service.task(id))),
+    };
+  });
   app.put<{ Params: { id: string }; Body: Workflow }>("/workflows/:id", (r) => {
     service.saveWorkflow({ ...r.body, id: r.params.id });
     return { saved: true };

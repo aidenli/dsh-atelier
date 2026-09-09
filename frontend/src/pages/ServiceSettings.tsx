@@ -1,5 +1,5 @@
 /** 地址与账户分开保存；密钥不回填，切换连接后重新读取能力和账户状态。 */
-import { Alert, Button, Form, Input, Select } from "antd";
+import { Alert, Button, Form, Input } from "antd";
 import { useEffect, useState } from "react";
 import type {
   Bridge,
@@ -89,16 +89,6 @@ export function ServiceSettings({
             onChange={(e) =>
               setConnection({ ...connection, backendUrl: e.target.value })
             }
-          />
-        </Form.Item>
-        <Form.Item label="启动方式">
-          <Select
-            value={connection.mode}
-            options={[
-              { value: "managed", label: "插件托管" },
-              { value: "external", label: "外部服务" },
-            ]}
-            onChange={(mode) => setConnection({ ...connection, mode })}
           />
         </Form.Item>
         <Form.Item label="RunningHub API Key">

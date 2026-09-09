@@ -2,7 +2,7 @@
 import type { WorkspaceState, WorkspaceStore } from "../../../contracts/types";
 export function createWorkspaceStore(): WorkspaceStore {
   let state: WorkspaceState = {
-    view: "home",
+    view: "motion-transfer",
     page: 1,
     filter: "",
   };

@@ -10,10 +10,12 @@ export function TaskDetail({
   id,
   bridge,
   back,
+  backLabel = "任务列表",
 }: {
   id: string;
   bridge: Bridge;
   back(): void;
+  backLabel?: string;
 }) {
   const [task, setTask] = useState<Task>(),
     [error, setError] = useState(""),
@@ -53,8 +55,14 @@ export function TaskDetail({
   }
   return (
     <>
-      <Button type="text" icon={<ArrowLeft size={16} />} onClick={back}>
-        任务列表
+      <Button
+        className="atelier-back"
+        color="primary"
+        variant="outlined"
+        icon={<ArrowLeft size={18} />}
+        onClick={back}
+      >
+        {backLabel}
       </Button>
       {error && <Alert type="error" title={error} showIcon />}
       {task && (

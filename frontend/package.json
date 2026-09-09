@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node ../scripts/test-frontend.mjs",
+    "test": "node ../tests/scripts/test-frontend.mjs",
     "format": "prettier --write src",
     "typecheck": "tsc --noEmit"
   },

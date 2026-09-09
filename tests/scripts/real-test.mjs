@@ -3,7 +3,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const runtime = resolve(root, ".runtime/default");
 const base = process.env.ATELIER_URL || "http://127.0.0.1:8787";
 const sessionId = "atelier-real-test-20260907";

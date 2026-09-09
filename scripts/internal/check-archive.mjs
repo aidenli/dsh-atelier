@@ -5,7 +5,7 @@ import { createRequire } from "node:module";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
-const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const archive = resolve(process.argv[2]);
 const target = "universal";
 const { list } = createRequire(resolve(root, "frontend/package.json"))("tar");
@@ -32,9 +32,12 @@ const source = JSON.parse(
   await readFile(resolve(root, "plugin/package.json"), "utf8"),
 );
 const allowed = new Set([
+  // 清单版本必须与已验收源配置一致，避免误发布旧 TGZ。
   "package/package.json",
   ...source.files.map((v) => `package/${v}`),
 ]);
+assert.equal(manifest.name, source.name, "包名与源码配置不一致");
+assert.equal(manifest.version, source.version, "包版本与源码配置不一致");
 for (const [name, entry] of entries)
   if (entry.type !== "Directory")
     assert.ok(allowed.has(name), `非白名单内容：${name}`);

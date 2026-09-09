@@ -16,7 +16,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { createRequire } from "node:module";
 import { spawnSync } from "node:child_process";
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const dsh = process.env.DSH_SOURCE || resolve(root, "../../deepseek-harness");
 const target = "universal";
 const plugin = resolve(root, "plugin");
@@ -27,7 +27,7 @@ const { build } = frontendRequire("esbuild");
 const packages = new Map();
 const contractCheck = spawnSync(
   process.execPath,
-  [resolve(root, "scripts/generate-contracts.mjs"), "--check"],
+  [resolve(root, "scripts/internal/generate-contracts.mjs"), "--check"],
   { stdio: "inherit" },
 );
 if (contractCheck.status !== 0) throw new Error("公开契约不一致");
@@ -143,7 +143,12 @@ await writeFile(
   resolve(packageDir, "src/index.ts"),
   "export { AtelierRemote } from './remote.ts';\n",
 );
-for (const name of ["remote.ts", "backend.ts", "managed-process.ts"])
+for (const name of [
+  "remote.ts",
+  "backend.ts",
+  "managed-process.ts",
+  "version.ts",
+])
   await copyFile(
     resolve(plugin, "src", name),
     resolve(packageDir, "src", name),

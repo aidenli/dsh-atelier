@@ -1,5 +1,14 @@
 # 更新记录
 
+## 0.3.2：项目管理与新版 DSH 适配
+
+- 适配 DSH 0.1.3-alpha.2，完善项目与任务分离及详情导航。
+- API Key 加密存入 SQLite，主密钥由系统保护。
+- 增加版本检查与更新命令浮层，设置改为 Tab，增强返回按钮。
+- 整理 Windows/macOS 编译、重启与分发脚本。
+- 21 项后端测试、7 项插件测试、类型检查、浏览器回归及 npm/GitHub 在线安装验证通过。
+- 2026-09-09 发布 npm latest 和 GitHub dist；macOS 尚未原生验收。
+
 ## 0.3.1：Node 后端与完整源码
 
 - 公开 frontend、backend、plugin、contracts、构建脚本及模块文档。

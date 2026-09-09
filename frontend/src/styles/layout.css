@@ -37,6 +37,14 @@
   font-size: 14px;
   margin: 24px 0 12px;
 }
+/* 返回入口使用主题色轮廓与浅底，独立留出间距，避免与详情标题混淆。 */
+.atelier .atelier-back {
+  min-height: 36px;
+  padding-inline: 14px;
+  margin-bottom: 16px;
+  font-weight: 600;
+  background: color-mix(in srgb, currentColor 7%, var(--atelier-bg));
+}
 .atelier p,
 .atelier small {
   color: var(--atelier-muted);
@@ -48,21 +56,22 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 24px;
+  padding: 6px 16px;
+  min-height: 44px;
   border-bottom: 1px solid var(--atelier-line);
   flex: none;
 }
 .atelier-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 .atelier-brand strong,
 .atelier-brand small {
   display: block;
 }
 .atelier-brand strong {
-  font-size: 20px;
+  font-size: 15px;
 }
 .atelier-tools,
 .atelier-actions {
@@ -82,7 +91,7 @@
   scrollbar-width: thin;
 }
 .atelier > .atelier-ant-tabs {
-  padding: 0 24px;
+  padding: 0 16px;
   flex: none;
 }
 .atelier > .atelier-ant-tabs .atelier-ant-tabs-nav {
@@ -187,9 +196,52 @@
   outline: 2px solid #3563e9;
 }
 /* 临时覆盖原生轨道，卸载标记即恢复平台偏好。 */
+.atelier-workspace {
+  position: relative;
+}
+.atelier-resize {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  touch-action: none;
+  z-index: 10;
+}
+.atelier-resize:hover,
+.atelier-resize:focus-visible {
+  background: var(--atelier-accent, #3563e9);
+  opacity: 0.4;
+}
+[data-atelier-layout] > [data-side="rightbar"] {
+  display: none;
+}
+.atelier-project-media {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.atelier-project-media > * {
+  min-width: 0;
+}
+.atelier-project-media .atelier-media {
+  height: 260px;
+}
+.atelier-project-media .atelier-media > video,
+.atelier-project-media .atelier-media-open,
+.atelier-project-media .atelier-media-open img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.atelier-motion-detail {
+  margin-bottom: 24px;
+}
 @media (min-width: 961px) {
   [data-atelier-layout] {
-    grid-template-columns: var(--atelier-sidebar-width) minmax(400px, 1fr) var(
+    grid-template-columns: var(--atelier-sidebar-width) minmax(480px, 1fr) var(
         --atelier-panel-width
       ) !important;
   }

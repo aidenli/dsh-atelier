@@ -1,3 +1,19 @@
 /* 入口仅汇集组件样式，无全局 reset，主题由 DSH 的生效状态控制。 */
 @import "./styles/layout.css";
 @import "./styles/media.css";
+/* 版本区保持单行紧凑排列，红点不占布局空间。 */
+.atelier-version {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: 6px;
+  min-width: 0;
+}
+.atelier-version-label {
+  font-size: 12px;
+  opacity: 0.75;
+  white-space: nowrap;
+}
+.atelier-version .atelier-ant-typography {
+  overflow-wrap: anywhere;
+}

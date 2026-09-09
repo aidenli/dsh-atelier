@@ -2,7 +2,7 @@
 import { readFile, readdir, writeFile } from "node:fs/promises";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const notices = new Map();
 async function collect(dir, name) {
   const files = await readdir(dir).catch(() => []);

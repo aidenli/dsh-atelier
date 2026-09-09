@@ -3,7 +3,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
-const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const schema = JSON.parse(
   await readFile(resolve(root, "contracts/openapi.json"), "utf8"),
 );
@@ -22,7 +22,7 @@ const type = (s) =>
             ? "boolean"
             : "string";
 let output =
-  "// 自动生成：node scripts/generate-contracts.mjs；公开字段以 openapi.json 为准。\n";
+  "// 自动生成：node scripts/internal/generate-contracts.mjs；公开字段以 openapi.json 为准。\n";
 for (const [name, s] of Object.entries(schema.components.schemas).sort(
   ([a], [b]) => a.localeCompare(b),
 )) {

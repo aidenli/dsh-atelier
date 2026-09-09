@@ -19,10 +19,143 @@ const png = Buffer.concat([
   Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
   Buffer.alloc(24),
 ]);
+test(
+  "Windows 密钥迁移、随机密文和主密钥丢失保护",
+  { skip: process.platform !== "win32" },
+  async () => {
+    const f = await fixture();
+    try {
+      const secret = "migration-test-secret";
+      await writeFile(
+        join(f.dir, "config.json"),
+        JSON.stringify({
+          baseUrl: "https://www.runninghub.cn",
+          apiKey: secret,
+        }),
+      );
+      const service = new Service(f.store);
+      assert.equal(service.getConfig().apiKey, secret);
+      assert.ok(
+        !(await readFile(join(f.dir, "config.json"), "utf8")).includes(secret),
+      );
+      const first = String(
+        f.store.db.prepare("SELECT body FROM secrets").get()!.body,
+      );
+      assert.ok(!first.includes(secret));
+      service.saveConfig({
+        baseUrl: "https://www.runninghub.cn",
+        apiKey: secret,
+      });
+      const second = String(
+        f.store.db.prepare("SELECT body FROM secrets").get()!.body,
+      );
+      assert.notEqual(first, second);
+      const damaged = JSON.parse(second);
+      damaged.tag = Buffer.alloc(16).toString("base64");
+      f.store.db
+        .prepare("UPDATE secrets SET body=?")
+        .run(JSON.stringify(damaged));
+      assert.throws(() => service.getConfig(), /解密失败/);
+      f.store.db.prepare("UPDATE secrets SET body=?").run(second);
+      await rm(join(f.dir, "master-key.dpapi"));
+      assert.throws(
+        () =>
+          service.saveConfig({
+            baseUrl: "https://www.runninghub.cn",
+            apiKey: "replacement",
+          }),
+        /主密钥文件丢失/,
+      );
+      assert.equal(
+        f.store.db.prepare("SELECT body FROM secrets").get()!.body,
+        second,
+      );
+    } finally {
+      await f.close();
+    }
+  },
+);
 const mp4 = Buffer.from(
   "00000018667479706d703432000000006d70343269736f6d000000086d646174",
   "hex",
 );
+test("项目与任务分离：批量归属、幂等、历史补齐不改变远端任务", async () => {
+  const f = await fixture();
+  try {
+    f.request.tasks.push({ ...f.request.tasks[0], title: "第二段" });
+    f.request.tasks.push({ ...f.request.tasks[0], title: "第三段" });
+    const plan = f.service.admit(f.request);
+    assert.equal(f.service.projects().length, 3);
+    const projectId = f.service.task(plan.taskIds[0]).projectId!;
+    assert.deepEqual(f.service.project(projectId).taskIds, [plan.taskIds[0]]);
+    assert.equal(plan.taskIds.length, 3);
+    assert.equal(f.service.admit(f.request).id, plan.id);
+    assert.equal(f.service.projects().length, 3);
+    f.service.update(plan.taskIds[0], (task) => {
+      task.remoteId = "existing-remote";
+      task.state = "remote_pending";
+    });
+    for (const p of f.service.projects()) f.store.delete("projects", p.id);
+    for (const t of f.service.tasks()) {
+      delete t.projectId;
+      f.store.put("tasks", t.id, t);
+    }
+    f.store.put("projects", plan.id, { id: plan.id, taskIds: plan.taskIds });
+    const eventsBefore = f.store.events(0);
+    const restored = new Service(f.store);
+    assert.equal(restored.projects().length, 3);
+    assert.equal(f.store.get("projects", plan.id), undefined);
+    assert.deepEqual(f.store.events(0), eventsBefore);
+    assert.equal(new Service(f.store).projects().length, 3);
+    assert.equal(restored.task(plan.taskIds[0]).remoteId, "existing-remote");
+    const app = await router(restored, f.files);
+    try {
+      const response = await app.inject({
+        method: "GET",
+        url: `/projects/${projectId}`,
+      });
+      assert.equal(response.statusCode, 200);
+      assert.equal(response.json().tasks.length, 1);
+      assert.equal(response.json().project.state, "remote_pending");
+      assert.equal(
+        (
+          await app.inject({ method: "GET", url: "/projects?type=other" })
+        ).json().total,
+        0,
+      );
+      restored.update(plan.taskIds[0], (t) => {
+        t.state = "failed";
+      });
+      restored.retry(
+        plan.taskIds[0],
+        "chat",
+        restored.task(plan.taskIds[0]).revision,
+      );
+      assert.equal(restored.task(plan.taskIds[0]).projectId, projectId);
+      assert.equal(restored.projects().length, 3);
+      for (let i = 0; i < 20; i++)
+        restored.admit({
+          ...f.request,
+          requestId: `page-${i}`,
+          tasks: [f.request.tasks[0]],
+        });
+      const second = (
+        await app.inject({
+          method: "GET",
+          url: "/projects?type=motion-transfer&page=2",
+        })
+      ).json();
+      assert.equal(second.total, 23);
+      assert.equal(second.items.length, 3);
+      assert.equal(second.page, 2);
+      assert.equal(response.json().tasks[0].uploads, undefined);
+    } finally {
+      await app.close();
+    }
+  } finally {
+    await f.close();
+  }
+});
 test("OpenAPI 中每个公开路由都在 Node 服务注册", async () => {
   const f = await fixture(),
     app = await router(f.service, f.files);

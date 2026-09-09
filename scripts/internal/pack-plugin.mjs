@@ -13,7 +13,7 @@ import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { parseArgs } from "node:util";
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const { values } = parseArgs({
   options: {
     target: { type: "string", default: "universal" },
@@ -25,7 +25,7 @@ if (target !== "universal") throw new Error("无效的打包目标");
 if (!values["skip-build"]) {
   const result = spawnSync(
     process.execPath,
-    [resolve(root, "scripts/build-plugin.mjs")],
+    [resolve(root, "scripts/internal/build-plugin.mjs")],
     { stdio: "inherit", env: { ...process.env, ATELIER_TARGET: target } },
   );
   if (result.status !== 0) throw new Error("构建失败");

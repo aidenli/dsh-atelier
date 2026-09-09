@@ -13,7 +13,9 @@ import type { Bridge, Workflow } from "../../contracts/types";
 import { useAtelierWidth } from "./useAtelierWidth";
 import { useWorkspaceData } from "./hooks/useWorkspaceData";
 import { IconButton } from "./components/common";
+import { PluginVersion } from "./components/PluginVersion";
 import { TasksPage } from "./pages/TasksPage";
+import { MotionProjects } from "./pages/MotionProjects";
 import { TaskDetail } from "./pages/TaskDetail";
 import { AssetsPage } from "./pages/AssetsPage";
 import { WorkflowsPage } from "./pages/WorkflowsPage";
@@ -29,7 +31,7 @@ export function Atelier({
   bridge: Bridge;
   close(): void;
 }) {
-  const { view, task, workflow } = useSyncExternalStore(
+  const { view, task, workflow, project } = useSyncExternalStore(
     bridge.workspace.subscribe,
     bridge.workspace.getSnapshot,
   );
@@ -50,6 +52,7 @@ export function Atelier({
     bridge.workspace.update({
       view: next,
       task: undefined,
+      project: undefined,
       workflow: undefined,
     });
   }
@@ -59,20 +62,22 @@ export function Atelier({
       ref={workspace}
       aria-label="Atelier 媒体工作台"
     >
+      <div
+        className="atelier-resize"
+        role="separator"
+        aria-label="调整插件宽度"
+        aria-orientation="vertical"
+        tabIndex={0}
+      />
       <header className="atelier-header">
         <div className="atelier-brand">
-          <Film size={22} />
+          <Film size={18} />
           <div>
             <strong>Atelier</strong>
-            <small>媒体工作台</small>
           </div>
         </div>
         <div className="atelier-tools">
-          <IconButton
-            label="服务设置"
-            icon={<Settings size={17} />}
-            onClick={() => navigate("settings")}
-          />
+          <PluginVersion bridge={bridge} />
           <IconButton
             label="返回原生详情"
             icon={<X size={18} />}
@@ -81,10 +86,16 @@ export function Atelier({
         </div>
       </header>
       <Tabs
+        size="small"
+        tabBarGutter={20}
         activeKey={view}
         onChange={navigate}
         items={[
-          { key: "home", label: "工作台", icon: <Film size={15} /> },
+          {
+            key: "motion-transfer",
+            label: "动作迁移",
+            icon: <Film size={15} />,
+          },
           { key: "tasks", label: "任务", icon: <Layers size={15} /> },
           { key: "assets", label: "素材", icon: <FolderOpen size={15} /> },
           {
@@ -92,6 +103,7 @@ export function Atelier({
             label: "工作流",
             icon: <SlidersHorizontal size={15} />,
           },
+          { key: "settings", label: "设置", icon: <Settings size={15} /> },
         ]}
       />
       {model.error && (
@@ -110,6 +122,7 @@ export function Atelier({
             id={task}
             bridge={bridge}
             back={() => setTask(undefined)}
+            backLabel={project ? "返回项目" : "任务列表"}
           />
         ) : workflow ? (
           <WorkflowEditor
@@ -130,6 +143,13 @@ export function Atelier({
               })
             }
           />
+        ) : view === "motion-transfer" ? (
+          <MotionProjects
+            bridge={bridge}
+            id={project}
+            open={(project) => bridge.workspace.update({ project })}
+            openTask={setTask}
+          />
         ) : view === "assets" ? (
           <AssetsPage
             model={model}
@@ -142,12 +162,7 @@ export function Atelier({
         ) : view === "settings" ? (
           <ServiceSettings bridge={bridge} onError={model.setError} />
         ) : (
-          <TasksPage
-            model={model}
-            bridge={bridge}
-            home={view === "home"}
-            open={setTask}
-          />
+          <TasksPage model={model} bridge={bridge} open={setTask} />
         )}
       </main>
     </section>

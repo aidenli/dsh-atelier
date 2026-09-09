@@ -5,7 +5,7 @@ import { mkdir, readFile } from "node:fs/promises";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import assert from "node:assert/strict";
-const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const require = createRequire(resolve(root, "frontend/package.json"));
 const { chromium, expect } = require("@playwright/test");
 const out = resolve(root, ".runtime/frontend-test");
@@ -37,14 +37,26 @@ try {
   const page = await browser.newPage({
     viewport: { width: 1280, height: 1000 },
   });
+  page.on("pageerror", (error) => console.error(error));
   let legacy = false,
     failDelete = true,
     deleteCalls = 0;
   let holdTasks = false,
     releaseLate;
   let assets = [{ id: "a", name: "测试素材.png", kind: "image", size: 100 }];
+  let version = {
+    current: "0.3.1",
+    latest: "0.3.2",
+    hasUpdate: true,
+    source: true,
+    error: undefined,
+  };
   await page.route("**/mock/**", async (route) => {
     const url = new URL(route.request().url());
+    if (url.pathname === "/mock/version")
+      return route.fulfill({
+        json: version,
+      });
     assert.equal(
       url.searchParams.has("sessionId"),
       false,
@@ -70,22 +82,51 @@ try {
       imageId: "a",
     };
     const payload =
-      url.pathname === "/mock/health"
-        ? legacy
-          ? {}
-          : { capabilities: ["asset-delete"] }
-        : url.pathname === "/mock/assets"
-          ? assets
-          : url.pathname === "/mock/tasks"
-            ? {
-                items: [task],
-                total: 1,
-                page: 1,
-                summary: { remote_pending: 1 },
-              }
-            : url.pathname === "/mock/tasks/t"
-              ? { task }
-              : [];
+      url.pathname === "/mock/projects"
+        ? {
+            items: [
+              {
+                id: "p",
+                type: "motion-transfer",
+                title: "项目一",
+                taskIds: ["t"],
+                createdAt: task.createdAt,
+                state: task.state,
+                completed: 0,
+                totalTasks: 1,
+                imageId: "a",
+              },
+            ],
+            page: 1,
+            total: 1,
+          }
+        : url.pathname === "/mock/projects/p"
+          ? {
+              project: {
+                id: "p",
+                title: "项目一",
+                type: "motion-transfer",
+                taskIds: ["t"],
+                createdAt: task.createdAt,
+              },
+              tasks: [task],
+            }
+          : url.pathname === "/mock/health"
+            ? legacy
+              ? {}
+              : { capabilities: ["asset-delete"] }
+            : url.pathname === "/mock/assets"
+              ? assets
+              : url.pathname === "/mock/tasks"
+                ? {
+                    items: [task],
+                    total: 1,
+                    page: 1,
+                    summary: { remote_pending: 1 },
+                  }
+                : url.pathname === "/mock/tasks/t"
+                  ? { task }
+                  : [];
     if (holdTasks && url.pathname === "/mock/tasks") {
       holdTasks = false;
       await new Promise((resolve) => {
@@ -95,6 +136,28 @@ try {
     await route.fulfill({ json: payload });
   });
   await page.goto(`http://127.0.0.1:${server.address().port}`);
+  await expect(page.getByText("v0.3.1", { exact: true })).toBeVisible();
+  await expect(
+    page.locator(".atelier-version .atelier-ant-badge-dot"),
+  ).toBeVisible();
+  await page.locator(".atelier-version button").click();
+  await expect(
+    page.getByText("当前通过源码加载。", { exact: false }),
+  ).toBeVisible();
+  await expect(page.getByRole("dialog")).not.toHaveClass(
+    /zoom-enter|zoom-appear/,
+  );
+  await page.screenshot({
+    path: resolve(out, "version-update.png"),
+    animations: "disabled",
+  });
+  await page.keyboard.press("Escape");
+  await expect(
+    page.getByRole("tab", { name: "工作台", exact: true }),
+  ).toHaveCount(0);
+  await page.getByRole("button", { name: /项目一/ }).click();
+  await expect(page.getByRole("heading", { name: "项目一" })).toBeVisible();
+  await page.screenshot({ path: resolve(out, "motion-project.png") });
   await expect(page.locator(".atelier-running")).toHaveCount(1);
   assert.notEqual(
     await page
@@ -226,6 +289,23 @@ try {
     .getByRole("button", { name: "放大预览 预留音频.mp3", exact: true })
     .click();
   await expect(page.getByRole("dialog").locator("audio")).toHaveCount(1);
+  version = { ...version, source: false };
+  await page.reload();
+  await page.locator(".atelier-version button").click();
+  await expect(
+    page.getByText("pnpm dsh plugin --profile web add dsh-atelier@latest", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  for (const error of [undefined, "暂时无法检查更新"]) {
+    version = { ...version, latest: "0.3.1", hasUpdate: false, error };
+    await page.reload();
+    await expect(page.getByText("v0.3.1", { exact: true })).toBeVisible();
+    await expect(page.locator(".atelier-version button")).toHaveCount(0);
+    await expect(
+      page.locator(".atelier-version .atelier-ant-badge-dot"),
+    ).toHaveCount(0);
+  }
   console.log(
     "前端浏览器回归通过：波浪、减少动态、主题、面板浮层、删除失败恢复、导航、窄列和旧后端。",
   );

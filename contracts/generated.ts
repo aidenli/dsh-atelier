@@ -1,4 +1,4 @@
-// 自动生成：node scripts/generate-contracts.mjs；公开字段以 openapi.json 为准。
+// 自动生成：node scripts/internal/generate-contracts.mjs；公开字段以 openapi.json 为准。
 
 /** Asset：公开接口类型，不包含后端内部执行字段。 */
 export interface Asset {
@@ -89,6 +89,27 @@ export interface Plan {
   taskIds: string[];
 }
 
+/** Project：公开接口类型，不包含后端内部执行字段。 */
+export interface Project {
+  id: string;
+  type: string;
+  title: string;
+  sessionId: string;
+  taskIds: string[];
+  createdAt: string;
+  state?: string;
+  completed?: number;
+  totalTasks?: number;
+  imageId?: string;
+}
+
+/** ProjectPage：公开接口类型，不包含后端内部执行字段。 */
+export interface ProjectPage {
+  items: Project[];
+  page: number;
+  total: number;
+}
+
 /** Task：公开接口类型，不包含后端内部执行字段。 */
 export interface Task {
   attempt: number;
@@ -103,6 +124,7 @@ export interface Task {
   outputIds: string[];
   parameters: Parameters;
   planId: string;
+  projectId?: string;
   providerUrl: string;
   remoteId: string;
   remoteState: string;

@@ -118,7 +118,7 @@ export class Backend {
   ): Promise<unknown> {
     if (
       !["GET", "POST", "PUT", "DELETE"].includes(method) ||
-      !/^\/(health|config|workflows|tasks|assets|events)(?:[/?]|$)/.test(
+      !/^\/(health|config|workflows|projects|tasks|assets|events)(?:[/?]|$)/.test(
         path,
       ) ||
       path.includes("..") ||

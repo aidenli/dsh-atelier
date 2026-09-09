@@ -9,7 +9,7 @@ import { once } from "node:events";
 import { setTimeout as delay } from "node:timers/promises";
 import { createServer } from "node:net";
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const archive = resolve(
   process.argv[2] || resolve(root, `dist/dsh-atelier-0.3.0-universal.tgz`),
 );

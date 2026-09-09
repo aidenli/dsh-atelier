@@ -14,7 +14,7 @@ export function registerMediaTools(
   // 工具仅允许业务操作，sessionId 从执行上下文取值，模型无法伪造其他会话身份。
   const operations = {
     capabilities:
-      "查询动作迁移能力、工作流和参数。仅支持 Wan Animate2 单段，固定 30fps。",
+      "查询 RunningHub 密钥是否已配置（hasApiKey）、动作迁移工作流和参数。未配置时先提示到 Atelier 服务设置配置，不创建或重试任务。仅支持 Wan Animate2 单段，固定 30fps。",
     asset_list:
       "同步当前会话附件并查询全局素材库。优先按用户明确提供的素材 ID 匹配，素材可跨会话复用；缺失或有歧义时追问，不创建占位任务。",
     asset_import:
@@ -32,7 +32,14 @@ export function registerMediaTools(
       ctx.tools.register(
         defineTool({
           name: `atelier_${operation}`,
-          description,
+          description:
+            operation === "task_create"
+              ? "每组输入创建一个独立动作迁移项目及一个 RunningHub 任务，批量三组生成三个项目；批次只负责幂等与汇总。" +
+                description
+              : operation === "task_get"
+                ? description +
+                  " 返回 projectId 指向所属作品；重试不创建新项目。"
+                : description,
           parameters: {
             payload: {
               type: "string",
@@ -57,15 +64,21 @@ export function registerMediaTools(
             const scope = `sessionId=${encodeURIComponent(sessionId)}`;
             let result: unknown;
             switch (operation) {
-              case "capabilities":
+              case "capabilities": {
+                // 只返回配置状态，显式投影避免配置接口新增字段时将密钥带入模型上下文。
+                const config = (await backend.request("GET", "/config")) as {
+                  hasApiKey?: boolean;
+                };
                 result = {
+                  hasApiKey: config.hasApiKey === true,
                   workflows: await backend.request("GET", "/workflows"),
                   fps: 30,
                   autoStartWhenReady: true,
                   instructions:
-                    "先查询素材，缺少素材时追问；入队后返回任务引用，无需循环查询。",
+                    "未配置 API Key 时先提示用户到 Atelier 服务设置配置，不在聊天中索取密钥；配置后重新检查，再查询素材并创建任务。入队后无需循环查询。",
                 };
                 break;
+              }
               case "asset_list":
                 await importSessionAttachments(ctx, backend, execution.agent);
                 // 素材库与页面一致，全局可读；下方任务操作仍使用执行者的会话范围。

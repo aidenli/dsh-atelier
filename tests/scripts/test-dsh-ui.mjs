@@ -3,7 +3,7 @@ import { createRequire } from "node:module";
 import { readFile, mkdir } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const require = createRequire(resolve(root, "frontend/package.json"));
 const { chromium, expect } = require("@playwright/test");
 // 令牌仅从本机启动日志读取，不打印到报告或命令行参数。

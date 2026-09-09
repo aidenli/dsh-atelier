@@ -3,6 +3,8 @@ import { createHash, randomBytes } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync, renameSync } from "node:fs";
 import { resolve } from "node:path";
 import { Store } from "../storage/store.js";
+import { Secrets } from "../storage/secrets.js";
+import type { Project } from "../../../contracts/generated.js";
 import {
   now,
   terminal,
@@ -96,12 +98,82 @@ export class Service {
     this.config = existsSync(path)
       ? JSON.parse(readFileSync(path, "utf8"))
       : { baseUrl: "https://www.runninghub.cn" };
+    // 先验证密文持久化再移除旧明文；中断重启可重复迁移，不能先删除唯一凭据。
+    const secrets = new Secrets(store);
+    const saved = secrets.read();
+    if (this.config.apiKey) {
+      if (!saved) secrets.write(this.config.apiKey);
+      writeFileSync(
+        path + ".tmp",
+        JSON.stringify({ baseUrl: this.config.baseUrl }, null, 2),
+        { mode: 0o600 },
+      );
+      renameSync(path + ".tmp", path);
+    }
+    delete this.config.apiKey;
     if (!store.get("workflows", "wan-animate2"))
       store.tx(() => store.put("workflows", "wan-animate2", defaultWorkflow()));
+    // v3 将批次项目拆为独立作品；事务同时保存双向归属和版本，崩溃后整体回滚。
+    store.tx(() => {
+      for (const plan of store.list<Plan>("plans")) this.ensureProject(plan);
+      store.db.exec("PRAGMA user_version=3");
+    });
+  }
+  /** 每项输入是一个作品；稳定项目 ID 只用于旧数据补齐，已有多任务项目不拆分。 */
+  private ensureProject(plan: Plan): void {
+    for (const taskId of plan.taskIds) {
+      const task = this.store.require<Task>("tasks", taskId);
+      if (task.projectId && this.store.get("projects", task.projectId))
+        continue;
+      const projectId = "project-" + hash(task.id).slice(0, 32);
+      const project: Project = {
+        id: projectId,
+        type: "motion-transfer",
+        title: task.title,
+        sessionId: task.sessionId,
+        taskIds: [task.id],
+        createdAt: task.createdAt,
+      };
+      task.projectId = projectId;
+      this.store.put("projects", projectId, project);
+      this.store.put("tasks", task.id, task);
+    }
+    // 仅移除旧实现中与批次同 ID 的项目，不改变历史执行记录与事件序号。
+    this.store.delete("projects", plan.id);
+  }
+  /** 项目全局可见，任务列表仍以数据库保存的归属为准。 */
+  projects(): Project[] {
+    return this.store
+      .list<Project>("projects")
+      .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+  }
+  /** 读取项目实体；未知 ID 抛出业务错误。 */
+  project(key: string): Project {
+    return this.store.require<Project>("projects", key);
+  }
+  /** 状态与完成数从任务实时聚合，避免取消、重试后项目摘要失真。 */
+  projectSummary(project: Project) {
+    const tasks = project.taskIds.map((key) => this.task(key));
+    const state =
+      tasks.find((t) => !terminal(t.state))?.state ||
+      (tasks.some((t) => t.state === "submission_unknown")
+        ? "submission_unknown"
+        : tasks.some((t) => t.state === "failed")
+          ? "failed"
+          : tasks.every((t) => t.state === "succeeded")
+            ? "succeeded"
+            : "cancelled");
+    return {
+      ...project,
+      state,
+      completed: tasks.filter((t) => t.state === "succeeded").length,
+      totalTasks: tasks.length,
+      imageId: tasks[0]?.imageId || "",
+    };
   }
   /** 返回仅供后端使用的副本，HTTP 必须另行脱敏。 */
   getConfig(): Config {
-    return { ...this.config };
+    return { ...this.config, apiKey: new Secrets(this.store).read() };
   }
   /** 原子替换配置后才更新内存；空密钥保留原值，不返回浏览器。 */
   saveConfig(value: Config): void {
@@ -116,9 +188,10 @@ export class Service {
       throw new Error("RunningHub 地址无效");
     const next = {
       baseUrl: value.baseUrl.replace(/\/+$/, ""),
-      apiKey: (value.apiKey || this.config.apiKey || "").trim(),
     };
     const path = resolve(this.store.dir, "config.json");
+    if (value.apiKey?.trim())
+      new Secrets(this.store).write(value.apiKey.trim());
     writeFileSync(path + ".tmp", JSON.stringify(next, null, 2), {
       mode: 0o600,
     });
@@ -283,6 +356,13 @@ export class Service {
         this.store.event(t.sessionId, t.id, "task", "已加入本地队列");
       }
       this.store.put("plans", key, plan);
+      this.ensureProject(plan);
+      this.store.event(
+        plan.sessionId,
+        plan.id,
+        "project",
+        "动作迁移项目已创建",
+      );
       return plan;
     });
     this.wake();

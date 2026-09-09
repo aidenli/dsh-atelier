@@ -1,6 +1,14 @@
 # SQLite 表设计
 
-版本：第一版，`PRAGMA user_version = 1`。核对日期：2026-09-08。
+凭据补充：新增 secrets(id TEXT PRIMARY KEY, body TEXT NOT NULL)，仅存 RunningHub API Key 的 AES-256-GCM 密文、nonce、认证标签及版本。主密钥由系统保护，不存入此表；详见 [API 密钥存储](API密钥存储.md)。config.json 迁移后不再保存 apiKey。
+
+版本：项目归属版，`PRAGMA user_version = 3`。核对日期：2026-09-08。
+
+## 项目迁移补充
+
+新增 projects(id TEXT PRIMARY KEY, body TEXT NOT NULL)，body 字段为 id、type、title、sessionId、taskIds、createdAt；任务 JSON 增加 projectId。项目状态与完成数查询时计算，不持久化。一次批量三组动作迁移创建三个独立项目；批次继续保存全部任务 ID。
+
+v1/v2 数据在 Service 启动事务内补齐项目，v2 的批次项目按任务拆分，完成后设置 user_version=3。任务 ID、远端 ID、尝试、输出和事件序号保持原值，重复启动不增加项目。已有合法项目归属不拆分。完整说明见 [项目与任务](项目与任务.md)。下文未涉及项目的原实体字段继续兼容。
 
 素材删除补充：`assets.body.deletedAt` 为可选 UTC 时间，缺失表示可见。删除仅设置此字段并在同一事务写入事件；保留文件与历史任务引用。列表过滤已删除项，新任务拒绝使用已删除输入。详见 [素材删除与界面更新](素材删除与界面更新.md)。
 

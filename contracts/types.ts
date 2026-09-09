@@ -1,6 +1,18 @@
 /** 业务实体复用 OpenAPI 生成类型；本文件只声明浏览器适配层和分页组合。 */
-import type { Asset, Task, Workflow } from "./generated";
+import type { Asset, Task, Workflow, Project } from "./generated";
 export type { Parameters, Workflow, Asset, Task, Event } from "./generated";
+export type { Project } from "./generated";
+export interface ProjectSummary extends Project {
+  state: string;
+  completed: number;
+  totalTasks: number;
+  imageId: string;
+}
+export interface ProjectPage {
+  items: ProjectSummary[];
+  page: number;
+  total: number;
+}
 export interface TaskPage {
   items: Task[];
   total: number;
@@ -10,6 +22,14 @@ export interface TaskPage {
 export interface ConnectionSettings {
   backendUrl: string;
   mode: "managed" | "external";
+}
+/** 插件安装版本来自 Host 清单；source 表示本地源码加载，不代表 npm 版本。 */
+export interface VersionInfo {
+  current: string;
+  latest?: string;
+  hasUpdate: boolean;
+  source: boolean;
+  error?: string;
 }
 /** 平台适配层提供稳定快照订阅，React 业务页面不导入 DSH 服务。 */
 export interface ThemeSource {
@@ -37,6 +57,8 @@ export interface Bridge {
 export interface WorkspaceState {
   view: string;
   task?: string;
+  project?: string;
+  projectPage?: number;
   workflow?: Workflow;
   page: number;
   filter: string;

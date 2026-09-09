@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
 import assert from "node:assert/strict";
-const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const dsh = process.env.DSH_SOURCE || resolve(root, "../../deepseek-harness");
 await mkdir(resolve(root, ".runtime"), { recursive: true });
 const stage = await mkdtemp(resolve(root, ".runtime/install-check-"));

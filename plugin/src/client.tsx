@@ -47,6 +47,7 @@ function mount(ctx: Context): void {
   };
   let disposeDetails: (() => unknown) | undefined;
   const close = () => {
+    if (disposeDetails) ctx.layout.closeRightbar();
     disposeDetails?.();
     disposeDetails = undefined;
   };
@@ -57,7 +58,7 @@ function mount(ctx: Context): void {
     const resize = () => {
       if (narrow.matches && disposeDetails) {
         close();
-        ctx.layout.closeDetails();
+        ctx.layout.closeRightbar();
       }
     };
     narrow.addEventListener("change", resize);
@@ -151,8 +152,8 @@ function mount(ctx: Context): void {
     if (narrow.matches) return;
     if (!disposeDetails)
       disposeDetails = ctx.slots.register(
-        { name: "details", priority: -100 },
-        ({ sessionId }: PropsRuntime<"details">) =>
+        { name: "rightbar", priority: -100 },
+        ({ sessionId }: PropsRuntime<"rightbar">) =>
           createElement(AtelierTheme, {
             source: themeSource,
             children: createElement(Atelier, {
@@ -163,7 +164,7 @@ function mount(ctx: Context): void {
             }),
           }),
       );
-    ctx.layout.openDetails();
+    ctx.layout.openRightbar(true, false);
   }
   /** DSH 插件配置入口与右侧设置共用同一表单，不复制配置状态。 */
   function PluginSettings() {

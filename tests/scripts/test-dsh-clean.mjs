@@ -8,7 +8,7 @@ import { spawn } from "node:child_process";
 import { once } from "node:events";
 import { createServer } from "node:net";
 import { setTimeout as delay } from "node:timers/promises";
-const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const require = createRequire(resolve(root, "frontend/package.json"));
 const { extract } = require("tar");
 const { chromium, expect } = require("@playwright/test");
@@ -159,6 +159,43 @@ try {
   ).not.toBeVisible({ timeout: 15000 });
   await page.locator(".atelier-entry-sidebar").click();
   const panel = page.locator(".atelier-workspace");
+  await expect(panel).toBeVisible();
+  const grid = page.locator("[data-atelier-layout]");
+  await expect
+    .poll(() =>
+      grid.evaluate((e) =>
+        Number.parseFloat(
+          getComputedStyle(e).gridTemplateColumns.split(" ")[1],
+        ),
+      ),
+    )
+    .toBeGreaterThanOrEqual(480);
+  const columns = await grid.evaluate((e) =>
+    getComputedStyle(e).gridTemplateColumns.split(" ").map(Number.parseFloat),
+  );
+  assert.ok(Math.abs(columns[1] - 480) < 2, "默认聊天宽度应为480px");
+  assert.ok(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+    "桌面出现横向溢出",
+  );
+  const handle = grid.locator(".atelier-resize");
+  const box = await handle.boundingBox();
+  if (box) {
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + 90, box.y + box.height / 2, { steps: 6 });
+    await page.mouse.up();
+    assert.ok(
+      await grid.evaluate(
+        (e) =>
+          Number.parseFloat(
+            getComputedStyle(e).gridTemplateColumns.split(" ")[1],
+          ) >= 480,
+      ),
+    );
+  }
   await expect(panel).toBeVisible({ timeout: 15000 });
   await panel.getByRole("tab", { name: "素材", exact: true }).click();
   await panel.locator("input[type=file]").setInputFiles({

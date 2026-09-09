@@ -19,7 +19,13 @@ export function WorkflowEditor({
   const [form, setForm] = useState(value);
   return (
     <>
-      <Button type="text" icon={<ArrowLeft size={16} />} onClick={back}>
+      <Button
+        className="atelier-back"
+        color="primary"
+        variant="outlined"
+        icon={<ArrowLeft size={18} />}
+        onClick={back}
+      >
         工作流列表
       </Button>
       <h2>工作流配置</h2>

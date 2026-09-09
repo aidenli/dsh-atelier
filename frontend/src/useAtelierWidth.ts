@@ -1,4 +1,4 @@
-/** 默认给聊天保留 700px，其余分配给工作台；退出即恢复原生列宽。 */
+/** 保留聊天最小可用宽度，其余尽量分配给项目页；退出恢复原生列宽。 */
 import { useEffect, type RefObject } from "react";
 
 export function useAtelierWidth(ref: RefObject<HTMLElement | null>) {
@@ -8,20 +8,16 @@ export function useAtelierWidth(ref: RefObject<HTMLElement | null>) {
       frame = frame.parentElement;
     if (!frame) return;
     const target = frame;
-    let preferredChat = 700;
-    let drag: { details: number; panel: number } | undefined;
-    const handle = target.querySelector<HTMLElement>('[data-side="details"]');
+    let preferredChat = 480;
+    let drag: { x: number; chat: number } | undefined;
+    const handle = ref.current?.querySelector<HTMLElement>(".atelier-resize");
     // DSH 当前内联格式为 sidebar px / minmax / details px；只读取，不重写其拖拽偏好。
     const update = () => {
       const tracks = target.style.gridTemplateColumns;
       const sidebar = Number.parseFloat(tracks) || 56;
-      const details = Number.parseFloat(tracks.split(" ").at(-1) || "") || 360;
       const available = Math.max(0, target.clientWidth - sidebar);
-      // 手动拖拽仍沿用平台事件，仅将原生轨道变化量应用到当前工作台宽度。
-      // 默认布局不再受原生详情列 520px 上限或“两倍宽度”约束。
-      if (drag)
-        preferredChat = available - (drag.panel + details - drag.details);
-      const chat = Math.min(Math.max(400, preferredChat), available);
+      // 独立手柄只调整临时聊天宽度，不写入 DSH 原生偏好；默认不受原生详情上限约束。
+      const chat = Math.min(Math.max(480, preferredChat), available);
       const width = Math.max(0, available - chat);
       for (const [key, value] of [
         ["--atelier-sidebar-width", `${sidebar}px`],
@@ -33,30 +29,50 @@ export function useAtelierWidth(ref: RefObject<HTMLElement | null>) {
     };
     target.dataset.atelierLayout = "true";
     update();
-    const startDrag = () => {
-      drag = {
-        details:
-          Number.parseFloat(
-            target.style.gridTemplateColumns.split(" ").at(-1) || "",
-          ) || 360,
-        panel: Number.parseFloat(
-          target.style.getPropertyValue("--atelier-panel-width"),
-        ),
-      };
+    const startDrag = (e: PointerEvent) => {
+      e.preventDefault();
+      handle?.setPointerCapture(e.pointerId);
+      drag = { x: e.clientX, chat: preferredChat };
+    };
+    const move = (e: PointerEvent) => {
+      if (drag) {
+        preferredChat = Math.max(480, drag.chat + e.clientX - drag.x);
+        update();
+      }
+    };
+    const key = (e: KeyboardEvent) => {
+      if (["ArrowLeft", "ArrowRight", "Home"].includes(e.key)) {
+        e.preventDefault();
+        preferredChat =
+          e.key === "Home"
+            ? 480
+            : Math.max(
+                480,
+                preferredChat + (e.key === "ArrowRight" ? 24 : -24),
+              );
+        update();
+      }
     };
     const endDrag = () => {
       drag = undefined;
     };
     handle?.addEventListener("pointerdown", startDrag);
+    handle?.addEventListener("pointermove", move);
+    handle?.addEventListener("keydown", key);
     window.addEventListener("pointerup", endDrag);
     window.addEventListener("pointercancel", endDrag);
     const observer = new MutationObserver(update);
+    const resize = new ResizeObserver(update);
+    resize.observe(target);
     observer.observe(target, { attributes: true, attributeFilter: ["style"] });
     window.addEventListener("resize", update);
     return () => {
       observer.disconnect();
+      resize.disconnect();
       window.removeEventListener("resize", update);
       handle?.removeEventListener("pointerdown", startDrag);
+      handle?.removeEventListener("pointermove", move);
+      handle?.removeEventListener("keydown", key);
       window.removeEventListener("pointerup", endDrag);
       window.removeEventListener("pointercancel", endDrag);
       delete target.dataset.atelierLayout;

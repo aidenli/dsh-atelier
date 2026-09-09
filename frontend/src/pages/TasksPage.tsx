@@ -1,5 +1,5 @@
 /** 工作台与任务管理共用列表查询；宽度受限时以媒体行展示。 */
-import { Empty, Pagination, Select, Statistic } from "antd";
+import { Empty, Pagination, Select } from "antd";
 import { ArrowRight, RefreshCw } from "lucide-react";
 import type { Bridge } from "../../../contracts/types";
 import { CreatedAt } from "../components/CreatedAt";
@@ -14,35 +14,22 @@ import {
 export function TasksPage({
   model,
   bridge,
-  home,
   open,
 }: {
   model: ReturnType<typeof useWorkspaceData>;
   bridge: Bridge;
-  home: boolean;
   open(id: string): void;
 }) {
-  const active = Object.entries(model.data.summary).reduce(
-    (n, [state, count]) => n + (settled.has(state) ? 0 : count),
-    0,
-  );
   return (
     <>
       <div className="atelier-section-head">
-        <h2>{home ? "创作进程" : "任务管理"}</h2>
+        <h2>任务管理</h2>
         <IconButton
           label="刷新任务"
           icon={<RefreshCw size={16} />}
           onClick={() => void model.refresh()}
         />
       </div>
-      {home && (
-        <div className="atelier-metrics">
-          <Statistic title="进行中" value={active} />
-          <Statistic title="已完成" value={model.data.summary.succeeded || 0} />
-          <Statistic title="本地等待" value={model.data.summary.queued || 0} />
-        </div>
-      )}
       <div className="atelier-filters">
         <Select
           aria-label="任务状态"
