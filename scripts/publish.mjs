@@ -62,7 +62,7 @@ if (values.channel === "prepare") {
     "--registry=https://registry.npmjs.org",
   ]);
 } else {
-  // 只在新建临时 clone 中替换 dist 的受控文件，禁止改动源码仓库或强制覆盖远端历史。
+  // 主线保留源码，只复制验收包的白名单安装入口，不删除源码。
   await mkdir(resolve(root, ".runtime/distribution"), { recursive: true });
   const stage = await mkdtemp(resolve(root, ".runtime/distribution/publish-"));
   const { extract } = createRequire(resolve(root, "frontend/package.json"))(
@@ -77,18 +77,25 @@ if (values.channel === "prepare") {
     "clone",
     "--single-branch",
     "--branch",
-    "dist",
+    "main",
     "https://github.com/aidenli/dsh-atelier.git",
     repo,
   ]);
-  const previous = JSON.parse(
-    await readFile(join(repo, "package.json"), "utf8"),
-  );
-  if (previous.version === manifest.version)
-    throw new Error("dist 已存在同版本，禁止覆盖；请增加版本并重新验收");
-  run("git", ["rm", "-r", "--", "."], repo);
+  const previous = await readFile(join(repo, "package.json"), "utf8")
+    .then(JSON.parse)
+    .catch((error) => {
+      if (error.code === "ENOENT") return undefined;
+      throw error;
+    });
+  if (previous?.version === manifest.version)
+    throw new Error(
+      "main 已存在同版本安装入口，禁止覆盖；请增加版本并重新验收",
+    );
   await cp(join(stage, "package"), repo, { recursive: true });
-  run("git", ["add", "."], repo);
+  const installed = JSON.parse(
+    await readFile(join(stage, "package/package.json"), "utf8"),
+  );
+  run("git", ["add", "-f", "--", "package.json", ...installed.files], repo);
   run(
     "git",
     [
@@ -102,6 +109,6 @@ if (values.channel === "prepare") {
     ],
     repo,
   );
-  run("git", ["push", "origin", "dist"], repo);
-  console.log("GitHub dist 已更新；main 源码和 npm 未自动发布。");
+  run("git", ["push", "origin", "main"], repo);
+  console.log("GitHub main 安装入口已更新；源码和 npm 未自动发布。");
 }

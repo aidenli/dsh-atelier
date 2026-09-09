@@ -91,7 +91,7 @@ export function PluginVersion({ bridge }: { bridge: Bridge }) {
               <p>GitHub 预构建包</p>
               <Typography.Paragraph copyable code>
                 pnpm dsh plugin --profile web add
-                github:aidenli/dsh-atelier#dist
+                github:aidenli/dsh-atelier#main
               </Typography.Paragraph>
               <p>
                 更新前核对发行说明中的 DSH

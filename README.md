@@ -9,7 +9,7 @@
 ```sh
 pnpm dsh plugin --profile web add dsh-atelier@latest
 # 或 GitHub 预构建版本
-pnpm dsh plugin --profile web add github:aidenli/dsh-atelier#dist
+pnpm dsh plugin --profile web add github:aidenli/dsh-atelier#main
 pnpm dsh web
 ```
 
