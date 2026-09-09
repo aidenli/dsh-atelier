@@ -1,7 +1,22 @@
 /** 插件连接与通知生命周期测试，使用临时目录和模拟服务，不访问真实账户。 */
 import { test } from "node:test";
-import { newerVersion } from "../src/version.ts";
+import { newerVersion, updatePlugin } from "../src/version.ts";
 import assert from "node:assert/strict";
+
+test("源码加载拒绝自动覆盖，重复更新请求均返回明确错误", async (t) => {
+  t.mock.method(globalThis, "fetch", async () =>
+    Response.json({ name: "dsh-atelier", version: "99.0.0" }),
+  );
+  const results = await Promise.allSettled([
+    updatePlugin("99.0.0"),
+    updatePlugin("99.0.0"),
+  ]);
+  for (const result of results) {
+    assert.equal(result.status, "rejected");
+    if (result.status === "rejected")
+      assert.match(result.reason.message, /源码加载/);
+  }
+});
 
 test("更新提示只接受更高的稳定版本，按数字而非文本比较", () => {
   assert.equal(newerVersion("0.3.2", "0.3.1"), true);

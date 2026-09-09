@@ -7,7 +7,7 @@ import { AtelierRemote } from "./remote.ts";
 import { installNotifications } from "./notifications.ts";
 import { installTransferSkill } from "./skill.ts";
 import { readOperations, writeOperations } from "../../contracts/routes.ts";
-import { versionInfo } from "./version.ts";
+import { versionInfo, updatePlugin } from "./version.ts";
 export { AtelierRemote } from "./remote.ts";
 export type { PluginConfig } from "./backend.ts";
 export { Backend } from "./backend.ts";
@@ -37,7 +37,7 @@ export async function apply(ctx: Context, config: PluginConfig): Promise<void> {
   // 每项操作有独立 URL 和固定 HTTP 方法，Network 面板直接显示业务名称。
   for (const [method, operations] of [
     ["GET", [...readOperations, "getConnection", "getVersion"]],
-    ["POST", [...writeOperations, "saveConnection"]],
+    ["POST", [...writeOperations, "saveConnection", "updatePlugin"]],
   ] as const) {
     for (const operation of operations)
       ctx.effect(
@@ -51,6 +51,8 @@ export async function apply(ctx: Context, config: PluginConfig): Promise<void> {
                 const path = `/${operation}${new URL(request.url).search}`;
                 let result: unknown;
                 if (operation === "getVersion") result = await versionInfo();
+                else if (operation === "updatePlugin")
+                  result = await updatePlugin((await request.json()).version);
                 else if (operation === "getConnection")
                   result = await backend.connection();
                 else if (operation === "saveConnection")

@@ -4,6 +4,53 @@ import { existsSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { VersionInfo } from "../../contracts/types.ts";
+import { createRequire } from "node:module";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+
+let installing: Promise<{ version: string }> | undefined;
+/** 只安装服务端已确认的稳定版本；并发点击共用一次安装，不重启正在执行任务的 Host。 */
+export async function updatePlugin(
+  version: string,
+): Promise<{ version: string }> {
+  if (installing) return installing;
+  installing = (async () => {
+    const info = await versionInfo();
+    if (info.source) throw new Error("源码加载请先更新源码并编译部署");
+    if (
+      !info.hasUpdate ||
+      info.latest !== version ||
+      !/^\d+\.\d+\.\d+$/.test(version)
+    )
+      throw new Error("更新版本已变化，请重新检查更新");
+    // 从当前 DSH 启动入口解析 CLI，避免调用 PATH 中另一套 DSH 安装。
+    const require = createRequire(resolve(process.argv[1]));
+    let cli: string;
+    try {
+      cli = resolve(
+        dirname(require.resolve("@deepseek-ai/dsh/package.json")),
+        "lib/bin.js",
+      );
+    } catch {
+      throw new Error("无法定位当前 DSH CLI，请使用浮层中的命令更新");
+    }
+    try {
+      await promisify(execFile)(
+        process.execPath,
+        [cli, "plugin", "--profile", "web", "add", `dsh-atelier@${version}`],
+        { windowsHide: true, timeout: 300000, maxBuffer: 4 * 1024 * 1024 },
+      );
+    } catch {
+      throw new Error("插件安装未成功，请使用命令行检查网络与安装日志后重试");
+    }
+    return { version };
+  })();
+  try {
+    return await installing;
+  } finally {
+    installing = undefined;
+  }
+}
 
 /** 当前分发使用三段稳定版本；未知格式不推断更新，避免把预发布版误当稳定升级。 */
 export function newerVersion(latest: string, current: string): boolean {

@@ -45,6 +45,8 @@ try {
     releaseLate;
   let assets = [{ id: "a", name: "测试素材.png", kind: "image", size: 100 }];
   let hasApiKey = true;
+  let failUpdate = true;
+  let updateCalls = 0;
   let version = {
     current: "0.3.1",
     latest: "0.3.2",
@@ -54,6 +56,14 @@ try {
   };
   await page.route("**/mock/**", async (route) => {
     const url = new URL(route.request().url());
+    if (url.pathname === "/mock/updatePlugin") {
+      updateCalls++;
+      assert.equal(route.request().method(), "POST");
+      assert.deepEqual(route.request().postDataJSON(), { version: "0.3.2" });
+      return failUpdate
+        ? route.fulfill({ status: 400, json: { error: "模拟安装失败" } })
+        : route.fulfill({ json: { version: "0.3.2" } });
+    }
     if (url.pathname === "/mock/getConfig")
       return route.fulfill({ json: { hasApiKey } });
     if (url.pathname === "/mock/getVersion")
@@ -317,10 +327,20 @@ try {
   await page.reload();
   await page.locator(".atelier-version button").click();
   await expect(
-    page.getByText("pnpm dsh plugin --profile web add dsh-atelier@latest", {
+    page.getByText("pnpm dsh plugin --profile web add dsh-atelier@0.3.2", {
       exact: true,
     }),
   ).toBeVisible();
+  await expect(page.getByText(
+    "pnpm dsh plugin --profile web add https://github.com/aidenli/dsh-atelier/releases/download/v0.3.2/dsh-atelier-0.3.2-universal.tgz",
+    { exact: true },
+  )).toBeVisible();
+  await page.getByRole("button", { name: "立即更新至 v0.3.2" }).click();
+  await expect(page.getByText(/模拟安装失败/)).toBeVisible();
+  failUpdate = false;
+  await page.getByRole("button", { name: "立即更新至 v0.3.2" }).click();
+  await expect(page.getByText("v0.3.2 已安装，请重启 DSH Web 后使用新版本。")).toBeVisible();
+  assert.equal(updateCalls, 2);
   for (const error of [undefined, "暂时无法检查更新"]) {
     version = { ...version, latest: "0.3.1", hasUpdate: false, error };
     await page.reload();

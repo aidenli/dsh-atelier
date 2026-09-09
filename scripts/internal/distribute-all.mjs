@@ -103,18 +103,22 @@ const old = await readFile(join(repo, "package.json"), "utf8")
     throw error;
   });
 if (old?.version === version) {
-  // 同版本恢复必须逐文件相同；Git 文本检出可能转换换行，先关闭转换再重新检出临时副本。
-  run(
-    "git",
-    ["-c", "core.autocrlf=false", "checkout-index", "--all", "--force"],
-    repo,
-  );
+  // 同版本恢复必须逐文件相同。使用 Git blob 规范化比较，避免 Windows
+  // checkout 的 CRLF 与 TGZ 内 LF 被误判为不同内容；二进制不会被转换。
   for (const name of ["package.json", ...installed.files]) {
-    if (
-      !(await readFile(join(repo, name))).equals(
-        await readFile(join(payload, name)),
-      )
-    )
+    const current = run(
+      "git",
+      ["hash-object", `--path=${name}`, join(repo, name)],
+      repo,
+      true,
+    );
+    const expected = run(
+      "git",
+      ["hash-object", `--path=${name}`, join(payload, name)],
+      repo,
+      true,
+    );
+    if (current !== expected)
       throw new Error(`main 同版本内容不同：${name}`);
   }
 } else {
